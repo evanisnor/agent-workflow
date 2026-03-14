@@ -7,6 +7,47 @@ agent-workflow is a Claude Code plugin that runs a multi-agent software developm
 - **Task Agents** each implement a single task in their own git worktree, shepherd the PR from draft through to merge, fix CI failures autonomously, and resolve merge conflicts when they arise.
 - **You** approve plans, review diffs, and handle anything the agents escalate — no more, no less.
 
+## Orchestration Flow
+
+```mermaid
+graph TD
+    subgraph you ["👤 You"]
+        uc_assign(["Assign work"])
+        uc_approve_plan(["Approve plan"])
+        uc_approve_diff(["Approve diff"])
+        uc_status(["Check agent status"])
+        uc_help(["Get help"])
+    end
+
+    subgraph oa ["🤖 Orchestrating Agent"]
+        uc_spawn_pa(["Spawn Planning Agent"])
+        uc_spawn_ta(["Spawn Task Agents"])
+        uc_present(["Present diff for review"])
+        uc_monitor(["Monitor PRs and CI"])
+        uc_show_status(["Report agent status"])
+        uc_show_help(["Show help reference"])
+    end
+
+    subgraph pa ["🤖 Planning Agent"]
+        uc_plan(["Decompose work into tasks"])
+    end
+
+    subgraph ta ["🤖 Task Agents"]
+        uc_implement(["Implement task"])
+        uc_pr(["Open and shepherd PR"])
+    end
+
+    uc_assign --> uc_spawn_pa
+    uc_spawn_pa --> uc_plan
+    uc_approve_plan --> uc_spawn_ta
+    uc_spawn_ta --> uc_implement
+    uc_implement --> uc_present
+    uc_approve_diff --> uc_pr
+    uc_pr --> uc_monitor
+    uc_status --> uc_show_status
+    uc_help --> uc_show_help
+```
+
 ## Requirements
 
 - [Claude Code](https://claude.ai/code) (CLI)
@@ -128,50 +169,6 @@ After you approve a diff, the Task Agent opens a draft PR, watches CI, marks the
 4. Once you approve, the Task Agent implements the change, runs the pre-PR checklist, and pushes. It then replies to the reviewer's comment with a link to the commit that addresses the feedback.
 5. The Orchestrating Agent opens a new tmux diff pane for your confirmation before the push goes through.
 6. This repeats until the reviewer approves.
-
-## Orchestration Flow
-
-```mermaid
-flowchart TD
-    A([Human assigns work])
-    A --> B{Approve spawning\nPlanning Agent?}
-    B -->|Yes| C[Planning Agent\ndecomposes work into tasks]
-    C --> D{Approve plan?}
-    D -->|Revise| C
-    D -->|Approve| E[Plan saved to\nplan storage repo]
-
-    E --> F[Identify tasks with\nno unmet dependencies]
-    F --> G{Approve spawning\nTask Agent batch?}
-    G -->|Yes| H[Create worktrees\nSpawn Task Agents]
-
-    H --> I[Task Agents implement\nand run pre-PR checklist]
-    I --> J{Approve diff?}
-    J -->|Reject with feedback| I
-    J -->|Approve| K[Task Agent opens draft PR]
-
-    K --> L[Watch CI]
-    L --> M{CI result?}
-    M -->|Fail — under limit| N[Task Agent fixes CI]
-    N --> L
-    M -->|Fail — limit exceeded| O([Escalate to Human])
-    M -->|Pass| P[Mark PR ready for review]
-
-    P --> Q[Watch PR status]
-    Q --> R{Review decision?}
-    R -->|Changes requested| S{Human approves\nrequested change?}
-    S -->|Approve| I
-    S -->|Reject| T[Relay rejection\nto reviewer]
-    T --> Q
-    R -->|Approved + CI passing| U[Add to merge queue]
-
-    U --> V{Merge result?}
-    V -->|Conflict| I
-    V -->|Merged| W[Remove worktree\nRebase remaining worktrees]
-    W --> X[Mark task done\nUnblock dependents]
-    X --> Y{More ready tasks?}
-    Y -->|Yes| F
-    Y -->|No| Z([Completion ceremony])
-```
 
 ## Permissions and Security
 
