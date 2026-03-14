@@ -30,7 +30,38 @@ sequenceDiagram
         PrimaryAgent->>TaskAgent: Spawn Task Agent with assigned task and worktree
         Note over PrimaryAgent,TaskAgent: Tasks with unresolved dependencies or worktree conflicts remain deferred in the tree
 
+        break Task Agent becomes unresponsive at any point
+            PrimaryAgent->>PrimaryAgent: Detect unresponsive Task Agent
+            PrimaryAgent->>Human: Notify Task Agent failure for task
+            alt Restart Task Agent
+                Human->>PrimaryAgent: Instruct restart
+                PrimaryAgent->>TaskAgent: Restart Task Agent
+            else Abandon task
+                Human->>PrimaryAgent: Instruct abandonment
+                PrimaryAgent->>PR: Close pull request (if open)
+                PrimaryAgent->>Worktree: Remove task worktree
+                PrimaryAgent->>PrimaryAgent: Mark task as failed in dependency tree
+                PrimaryAgent->>PrimaryAgent: Flag dependent tasks as blocked
+                PrimaryAgent->>Human: Notify dependent tasks blocked — revise dependency tree
+            end
+        end
+
+        break Human cancels task at any point
+            Human->>PrimaryAgent: Cancel task
+            PrimaryAgent->>PR: Close pull request (if open)
+            PrimaryAgent->>Worktree: Remove task worktree
+            PrimaryAgent->>PrimaryAgent: Mark task as cancelled in dependency tree
+            PrimaryAgent->>PrimaryAgent: Flag dependent tasks as blocked
+            PrimaryAgent->>Human: Notify dependent tasks blocked — revise dependency tree
+        end
+
         TaskAgent->>Worktree: Create worktree and implement initial changes
+        opt Task Agent discovers scope is larger than planned
+            TaskAgent->>PrimaryAgent: Notify task scope exceeds original plan
+            PrimaryAgent->>Human: Notify task needs re-planning
+            PrimaryAgent->>PrimaryAgent: Split task and update dependency tree
+            PrimaryAgent->>Human: Present revised task dependency tree for approval
+        end
         TaskAgent->>PrimaryAgent: Request approval to open PR
         loop Until human approves
             PrimaryAgent->>PrimaryAgent: Open tmux pane "review-{task}" showing full diff
@@ -112,6 +143,12 @@ sequenceDiagram
                     end
                     LocalMain->>PrimaryAgent: Notify local main updated
                     PrimaryAgent->>Worktree: Rebase all remaining agent worktrees onto local main
+                    opt Rebase conflicts in remaining worktrees
+                        Worktree-->>TaskAgent: Notify rebase conflict
+                        TaskAgent->>Worktree: Resolve rebase conflicts
+                        TaskAgent->>PrimaryAgent: Notify rebase conflicts resolved
+                        PrimaryAgent->>Human: Notify rebase conflicts resolved in worktree
+                    end
                     PrimaryAgent->>PrimaryAgent: Unblock tasks in dependency tree that depended on this merge
                     PrimaryAgent->>Human: Notify PR merged and worktree removed
                     PrimaryAgent->>Human: Present updated task dependency tree (if remaining tasks exist)
@@ -146,6 +183,13 @@ sequenceDiagram
                     PR-->>PrimaryAgent: Notify merge failure due to CI errors
                     PrimaryAgent->>Human: Notify merge failure with CI error details
                     Human->>PrimaryAgent: Provide instructions
+                    PrimaryAgent-->>TaskAgent: Forward instructions
+                    Note over TaskAgent,Worktree: Worktree persists until merge succeeds
+                else Merge queue times out or PR ejected
+                    PR-->>TaskAgent: Notify ejection from merge queue
+                    TaskAgent->>PrimaryAgent: Notify merge queue ejection
+                    PrimaryAgent->>Human: Notify PR ejected from merge queue — await instructions
+                    Human->>PrimaryAgent: Provide instructions (re-queue or abandon)
                     PrimaryAgent-->>TaskAgent: Forward instructions
                     Note over TaskAgent,Worktree: Worktree persists until merge succeeds
                 end
