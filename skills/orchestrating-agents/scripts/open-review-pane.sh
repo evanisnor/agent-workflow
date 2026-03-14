@@ -27,8 +27,15 @@ if [[ -z "${TMUX:-}" ]]; then
   exit 1
 fi
 
+# Use delta for syntax-highlighted diffs if available, otherwise plain git diff
+if command -v delta &>/dev/null; then
+  DIFF_CMD="git -C \"${WORKTREE_PATH}\" diff HEAD | delta"
+else
+  DIFF_CMD="git -C \"${WORKTREE_PATH}\" diff HEAD"
+fi
+
 # Split a new pane in the current window
 PANE_ID="$(tmux split-window -P -F '#{pane_id}' \
-  "git -C \"${WORKTREE_PATH}\" diff HEAD; echo '--- end of diff ---'; read -r -p 'Press Enter to close...' _")"
+  "${DIFF_CMD}; echo '--- end of diff ---'; read -r -p 'Press Enter to close...' _")"
 
 echo "${PANE_ID}"

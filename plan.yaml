@@ -599,7 +599,7 @@ tasks:
 
   - id: 19
     name: delta-diff-integration
-    status: pending
+    status: done
     depends_on: [8]
     description: >
       Integrate delta (https://github.com/dandavison/delta) into the diff review workflow

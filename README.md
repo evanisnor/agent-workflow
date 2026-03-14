@@ -14,6 +14,7 @@ agent-workflow is a Claude Code plugin that runs a multi-agent software developm
 - `tmux` (for diff review panes)
 - `jq` and `yq` (for config and plan parsing)
 - A dedicated **plan storage git repository** (can be private, can be empty to start)
+- Optionally: [`delta`](https://github.com/dandavison/delta) for syntax-highlighted diff review panes (falls back to plain `git diff` if not installed)
 - Optionally: a Jira MCP server if you want Jira integration
 
 ## Installation
