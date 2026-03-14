@@ -26,7 +26,13 @@ git clone https://github.com/evanisnor/agent-workflow ~/.claude/plugins/agent-wo
 
 **2. Enable the plugin in Claude Code**
 
-Add it to your Claude Code plugins config, or place it in your `CLAUDE_PLUGIN_DIR`. Refer to the [Claude Code plugin documentation](https://code.claude.com/docs/en/plugins) for your installation method.
+Pass the plugin directory when starting Claude Code:
+
+```sh
+claude --plugin-dir ~/.claude/plugins/agent-workflow
+```
+
+Or set `CLAUDE_PLUGIN_DIR` in your environment to load it automatically every session.
 
 **3. Create your plan storage repository**
 
