@@ -37,7 +37,7 @@ sequenceDiagram
             Human->>PrimaryAgent: Notify Jira epic created (provide epic key)
             PrimaryAgent->>JiraMCP: Read epic and child issues by epic key
             JiraMCP-->>PrimaryAgent: Return Jira items
-            PrimaryAgent->>PrimaryAgent: Match Jira issues to tasks by title; update IDs in plan
+            PrimaryAgent->>PrimaryAgent: Match Jira issues to tasks by title and update IDs in plan
             PrimaryAgent->>PlanStorage: Persist plan with Jira IDs
             PrimaryAgent->>Human: Confirm Jira IDs linked to plan (last_synced_at recorded)
         end
