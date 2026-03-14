@@ -115,6 +115,7 @@ sequenceDiagram
                     LocalMain->>PrimaryAgent: Notify local main updated
                     PrimaryAgent->>Worktree: Rebase all remaining agent worktrees onto local main
                     PrimaryAgent->>PrimaryAgent: Unblock tasks in dependency tree that depended on this merge
+                    PrimaryAgent->>Human: Notify PR merged and worktree removed
                     PrimaryAgent->>Human: Present updated task dependency tree (if remaining tasks exist)
                 else Merge fails with conflicts
                     PR-->>TaskAgent: Notify merge conflicts
