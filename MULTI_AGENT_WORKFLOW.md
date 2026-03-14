@@ -1,4 +1,6 @@
-# Agent Workflow
+# Multi-Agent Workflow
+
+This document describes the orchestration workflow for planning and delegating work across multiple Claude agents. A **Primary Agent** is responsible for breaking projects into atomic tasks, managing a persistent task dependency tree, and spawning **Task Agents** to shepherd individual Pull Requests from implementation through to merge. The **Human** is involved at key decision points — approving plans, reviewing diffs, and providing direction when issues arise.
 
 ```mermaid
 sequenceDiagram
