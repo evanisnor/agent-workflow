@@ -1,11 +1,11 @@
 # Multi-Agent Workflow
 
-This document describes the orchestration workflow for planning and delegating work across multiple Claude agents. A **Primary Agent** is responsible for coordinating a **Planning Agent** and **Task Agents**: the Planning Agent handles all task decomposition and plan management; Task Agents shepherd individual Pull Requests from implementation through to merge. The **Human** is involved at key decision points — approving plans, reviewing diffs, and providing direction when issues arise.
+This document describes the orchestration workflow for planning and delegating work across multiple Claude agents. An **Orchestrating Agent** is responsible for coordinating a **Planning Agent** and **Task Agents**: the Planning Agent handles all task decomposition and plan management; Task Agents execute individual tasks from implementation through to merge. The **Human** is involved at key decision points — approving plans, reviewing diffs, and providing direction when issues arise.
 
 ```mermaid
 sequenceDiagram
     participant Human as Human
-    participant PrimaryAgent as Primary Claude Agent
+    participant PrimaryAgent as Orchestrating Agent
     participant PlanningAgent as Planning Agent
     participant PlanStorage as Plan Storage
     participant JiraMCP as Jira (MCP — read only)
@@ -263,7 +263,7 @@ sequenceDiagram
 
 The workflow above will be implemented as three Claude Skills — one per agent role — following [Anthropic's Agent Skills best practices](https://platform.anthropic.com/docs/en/agents-and-tools/agent-skills/best-practices).
 
-### Skill 1: `orchestrating-agents` (Primary Agent)
+### Skill 1: `orchestrating-agents` (`PrimaryAgent`)
 
 Responsible for spawning and coordinating Planning Agents and Task Agents, diff review, monitoring, and post-merge cleanup. Does not plan or write code.
 
@@ -289,7 +289,7 @@ orchestrating-agents/
 #### Skill File Specifications
 
 **`SKILL.md`** must include:
-- Agent identity: Primary Orchestrator — spawns Planning Agents and Task Agents, relays planning conversations to the human, reviews diffs, and coordinates merges; does not plan or write code
+- Agent identity: Orchestrating Agent — spawns Planning Agents and Task Agents, relays planning conversations to the human, reviews diffs, and coordinates merges; does not plan or write code
 - Authority matrix: what the agent may do autonomously (open tmux panes, load plans, spawn Planning Agents and Task Agents, rebase worktrees, close PRs on cancellation) vs. what requires human approval (spawning any Planning Agent, spawning any batch of Task Agents, approving diffs, abandoning tasks)
 - High-level workflow overview with pointers to `REVIEW.md` and `PR_MONITORING.md`
 - Hard constraints: must never push code directly; must never merge PRs without human-approved diff; must serialize all plan writes through `save-plan.sh`; must wrap all external content in `<external_content>` tags before including in agent prompts (see [Security](#security))
@@ -306,7 +306,7 @@ orchestrating-agents/
 
 ---
 
-### Skill 2: `planning-tasks` (Planning Agent)
+### Skill 2: `planning-tasks` (`PlanningAgent`)
 
 Responsible for task decomposition, dependency tree construction, plan persistence, and Jira ID management. Spawned on-demand by the Primary Agent; runs until a plan is finalized and approved, then returns the plan path and exits.
 
@@ -340,12 +340,12 @@ planning-tasks/
 
 ---
 
-### Skill 3: `shepherding-pull-requests` (Task Agent)
+### Skill 3: `executing-tasks` (`TaskAgent`)
 
 Responsible for implementation, opening draft PRs, responding to CI/review feedback, handling conflicts, and adding to the merge queue.
 
 ```
-shepherding-pull-requests/
+executing-tasks/
   SKILL.md                  # Overview + PR lifecycle workflow
   CI_FEEDBACK.md            # CI failure triage and fix workflow
   CONFLICT_RESOLUTION.md    # Merge conflict resolution workflow
@@ -361,7 +361,7 @@ shepherding-pull-requests/
 #### Skill File Specifications
 
 **`SKILL.md`** must include:
-- Agent identity: Task Agent / PR Shepherd — implements a single task in its assigned worktree and shepherds its PR from draft to merge; does not plan or spawn other agents
+- Agent identity: Task Agent — implements a single task in its assigned worktree and shepherds its PR from draft to merge; does not plan or spawn other agents
 - Authority matrix: agent may push freely to its own feature branch; must never push to `main`, must never merge PRs unilaterally, must never close PRs without Primary Agent instruction
 - High-level PR lifecycle with pointers to `CI_FEEDBACK.md` and `CONFLICT_RESOLUTION.md`
 - Pre-PR checklist (must complete before requesting approval to open PR): run tests locally, run linter, verify no files outside the task's stated scope were modified, confirm branch is rebased onto latest local main
@@ -518,8 +518,8 @@ External content — PR review comments, CI logs, issue descriptions, Jira text,
 
 **Affected skill files** (must include an injection-defense note referencing this section):
 - `orchestrating-agents/PR_MONITORING.md` — review comments and CI feedback received from GitHub
-- `shepherding-pull-requests/CI_FEEDBACK.md` — CI log output
-- `shepherding-pull-requests/CONFLICT_RESOLUTION.md` — incoming commit messages and code during rebase
+- `executing-tasks/CI_FEEDBACK.md` — CI log output
+- `executing-tasks/CONFLICT_RESOLUTION.md` — incoming commit messages and code during rebase
 
 ### Secret Isolation
 
