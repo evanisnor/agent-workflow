@@ -4,6 +4,7 @@
 sequenceDiagram
     participant Human as Human
     participant PrimaryAgent as Primary Claude Agent
+    participant PlanStorage as Plan Storage
     participant TaskAgent as Task Agent
     participant Worktree as Agent Worktree
     participant PR as Pull Request (Draft → Ready)
@@ -17,11 +18,14 @@ sequenceDiagram
         Note over Human,PrimaryAgent: Planning Phase — may occur at any time for new or existing projects
         Human->>PrimaryAgent: Assign projects / tasks
         Note over Human,PrimaryAgent: Human may send new commands or tasks to Primary Agent at any time
+        PrimaryAgent->>PlanStorage: Load existing plans and task dependency trees
+        PlanStorage-->>PrimaryAgent: Return stored plans (if any)
         PrimaryAgent->>PrimaryAgent: Break work into atomic tasks
         PrimaryAgent->>PrimaryAgent: Identify task dependencies and potential worktree conflicts
         PrimaryAgent->>PrimaryAgent: Build full task dependency tree
         PrimaryAgent->>Human: Present task dependency tree for approval
         Human->>PrimaryAgent: Approve or revise task dependency tree
+        PrimaryAgent->>PlanStorage: Persist approved task dependency tree
     end
 
     loop For each batch of tasks ready to execute per dependency tree
@@ -42,6 +46,7 @@ sequenceDiagram
                 PrimaryAgent->>Worktree: Remove task worktree
                 PrimaryAgent->>PrimaryAgent: Mark task as failed in dependency tree
                 PrimaryAgent->>PrimaryAgent: Flag dependent tasks as blocked
+                PrimaryAgent->>PlanStorage: Update dependency tree (task failed, dependents blocked)
                 PrimaryAgent->>Human: Notify dependent tasks blocked — revise dependency tree
             end
         end
@@ -52,6 +57,7 @@ sequenceDiagram
             PrimaryAgent->>Worktree: Remove task worktree
             PrimaryAgent->>PrimaryAgent: Mark task as cancelled in dependency tree
             PrimaryAgent->>PrimaryAgent: Flag dependent tasks as blocked
+            PrimaryAgent->>PlanStorage: Update dependency tree (task cancelled, dependents blocked)
             PrimaryAgent->>Human: Notify dependent tasks blocked — revise dependency tree
         end
 
@@ -59,8 +65,12 @@ sequenceDiagram
         opt Task Agent discovers scope is larger than planned
             TaskAgent->>PrimaryAgent: Notify task scope exceeds original plan
             PrimaryAgent->>Human: Notify task needs re-planning
+            PrimaryAgent->>PlanStorage: Load current dependency tree
+            PlanStorage-->>PrimaryAgent: Return current dependency tree
             PrimaryAgent->>PrimaryAgent: Split task and update dependency tree
             PrimaryAgent->>Human: Present revised task dependency tree for approval
+            Human->>PrimaryAgent: Approve or revise
+            PrimaryAgent->>PlanStorage: Persist revised dependency tree
         end
         TaskAgent->>PrimaryAgent: Request approval to open PR
         loop Until human approves
@@ -150,6 +160,7 @@ sequenceDiagram
                         PrimaryAgent->>Human: Notify rebase conflicts resolved in worktree
                     end
                     PrimaryAgent->>PrimaryAgent: Unblock tasks in dependency tree that depended on this merge
+                    PrimaryAgent->>PlanStorage: Update dependency tree (task complete, dependents unblocked)
                     PrimaryAgent->>Human: Notify PR merged and worktree removed
                     PrimaryAgent->>Human: Present updated task dependency tree (if remaining tasks exist)
                 else Merge fails with conflicts
