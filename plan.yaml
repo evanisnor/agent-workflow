@@ -237,7 +237,7 @@ tasks:
 
   - id: 9
     name: orchestrating-skill-md
-    status: pending
+    status: done
     depends_on: [1]
     description: >
       Write skills/orchestrating-agents/SKILL.md — the Orchestrating Agent's primary skill file.
