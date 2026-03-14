@@ -345,7 +345,7 @@ tasks:
 
   - id: 12
     name: planning-skill-md
-    status: pending
+    status: done
     depends_on: [1]
     description: >
       Write skills/planning-tasks/SKILL.md — the Planning Agent's primary skill file.
