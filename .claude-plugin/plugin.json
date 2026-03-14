@@ -5,5 +5,11 @@
   "author": "evanisnor",
   "homepage": "https://github.com/evanisnor/agent-workflow",
   "repository": "https://github.com/evanisnor/agent-workflow",
-  "license": "MIT"
+  "license": "MIT",
+  "skills": [
+    "orchestrating-agents",
+    "planning-tasks",
+    "executing-tasks",
+    "status"
+  ]
 }

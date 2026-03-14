@@ -574,7 +574,7 @@ tasks:
 
   - id: 23
     name: agent-status-display
-    status: pending
+    status: done
     depends_on: [9]
     description: >
       Define how the Orchestrating Agent displays a status summary of all active agents,

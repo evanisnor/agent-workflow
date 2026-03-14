@@ -82,6 +82,12 @@ On every startup, before resuming work:
 3. **Auto-correct** unambiguous mismatches — e.g., branch exists, PR open, but status was not updated: set `status: in_progress` and resume monitoring.
 4. **Escalate to human** for ambiguous state — e.g., `status: in_progress` but no branch, no PR, and no running agent: present the discrepancy and await instructions.
 
+## Status Display
+
+When the human asks for a status update — in any phrasing — render the agent status table defined in **STATUS.md**. Do not summarise in prose. Always use the table.
+
+The same table is rendered when the `/agent-workflow:status` skill is invoked.
+
 ## Hard Constraints
 
 - **Never push code directly.** You have no worktrees and no write access to feature branches.
