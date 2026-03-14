@@ -146,7 +146,7 @@ tasks:
 
   - id: 6
     name: orchestrating-worktree-scripts
-    status: pending
+    status: done
     depends_on: [4]
     description: >
       Write three worktree management scripts in skills/orchestrating-agents/scripts/:
