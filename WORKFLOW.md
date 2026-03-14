@@ -14,7 +14,7 @@ sequenceDiagram
     Note over TaskAgent: Each Task Agent is responsible for shepherding<br/>a single Pull Request from implementation through to merge
 
     rect rgb(30, 30, 60)
-        Note over Human,PrimaryAgent: Planning Phase
+        Note over Human,PrimaryAgent: Planning Phase — may occur at any time for new or existing projects
         Human->>PrimaryAgent: Assign projects / tasks
         Note over Human,PrimaryAgent: Human may send new commands or tasks to Primary Agent at any time
         PrimaryAgent->>PrimaryAgent: Break work into atomic tasks
