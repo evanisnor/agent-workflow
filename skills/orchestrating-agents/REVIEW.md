@@ -9,6 +9,16 @@ This document defines the procedures for presenting diffs to the human and relay
 - The returned pane ID must be stored and passed to `close-review-pane.sh` when closing.
 - If the Orchestrating Agent is not running inside tmux, abort and notify the human.
 
+## Diff Mode Toggle
+
+At any point during a diff review the human can switch between display modes by responding with `split` or `unified`. When this happens:
+
+1. Call `close-review-pane.sh "<pane-id>"` to close the current pane.
+2. Call `open-review-pane.sh "<pane-name>" "<worktree-path>" "<new-mode>"` to re-open it in the requested mode.
+3. Store the new pane ID and continue the review loop from the same step.
+
+The chosen mode applies only to the current review session and does not write back to config.
+
 ## Initial Diff Review Loop
 
 Triggered when a Task Agent requests approval to open a PR.

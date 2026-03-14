@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # open-review-pane.sh — split a tmux pane showing git diff for review
-# Usage: open-review-pane.sh <pane-name> <worktree-path>
+# Usage: open-review-pane.sh <pane-name> <worktree-path> [mode]
+#
+# mode: "split" (delta --side-by-side) or "unified" (delta default).
+#       Defaults to $DIFF_MODE from config.sh, then "split".
+#       Has no effect when delta is not installed.
 #
 # Splits a new pane in the SAME tmux window as the Orchestrating Agent.
 # Never creates a new tmux session or window.
@@ -10,9 +14,10 @@ set -euo pipefail
 
 PANE_NAME="${1:-}"
 WORKTREE_PATH="${2:-}"
+MODE="${3:-${DIFF_MODE:-split}}"
 
 if [[ -z "${PANE_NAME}" || -z "${WORKTREE_PATH}" ]]; then
-  echo "Usage: open-review-pane.sh <pane-name> <worktree-path>" >&2
+  echo "Usage: open-review-pane.sh <pane-name> <worktree-path> [mode]" >&2
   exit 1
 fi
 
@@ -27,9 +32,13 @@ if [[ -z "${TMUX:-}" ]]; then
   exit 1
 fi
 
-# Use delta for syntax-highlighted diffs if available, otherwise plain git diff
+# Build diff command — use delta when available, respecting the requested mode
 if command -v delta &>/dev/null; then
-  DIFF_CMD="git -C \"${WORKTREE_PATH}\" diff HEAD | delta"
+  if [[ "${MODE}" == "split" ]]; then
+    DIFF_CMD="git -C \"${WORKTREE_PATH}\" diff HEAD | delta --side-by-side"
+  else
+    DIFF_CMD="git -C \"${WORKTREE_PATH}\" diff HEAD | delta"
+  fi
 else
   DIFF_CMD="git -C \"${WORKTREE_PATH}\" diff HEAD"
 fi

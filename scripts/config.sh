@@ -117,6 +117,14 @@ if [[ "${TASK_AGENT_MODE}" != "bypassPermissions" && "${TASK_AGENT_MODE}" != "ac
   TASK_AGENT_MODE="acceptEdits"
 fi
 
+export DIFF_MODE
+DIFF_MODE="$(_cfg '.diff.mode' '.defaults.diff_mode' 'split')"
+
+# Enforce valid values
+if [[ "${DIFF_MODE}" != "split" && "${DIFF_MODE}" != "unified" ]]; then
+  DIFF_MODE="split"
+fi
+
 # --- Per-epic config override ---
 # Scripts that accept a plan path (e.g. spawn-agent.sh) should call
 # apply_epic_config <plan_yaml_path> after sourcing this file to layer

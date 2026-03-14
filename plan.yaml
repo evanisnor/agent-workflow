@@ -574,7 +574,7 @@ tasks:
 
   - id: 22
     name: diff-mode-config
-    status: pending
+    status: done
     depends_on: [19, 21]
     description: >
       Add configurable diff display mode (split/unified) and an in-review toggle so the
