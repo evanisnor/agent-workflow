@@ -112,7 +112,14 @@ sequenceDiagram
                 PR-->>TaskAgent: Notify changes requested (include comment URL)
                 TaskAgent->>PrimaryAgent: Notify change requested (include comment URL and summary)
                 PrimaryAgent->>Human: Notify reviewer change request with link to comment
-                TaskAgent->>Worktree: Apply requested modifications
+                alt Human provides own instructions
+                    Human->>PrimaryAgent: Provide modified or additional instructions
+                    PrimaryAgent-->>TaskAgent: Forward human's instructions (overrides reviewer request)
+                else Human approves proceeding with reviewer's request
+                    Human->>PrimaryAgent: Approve addressing reviewer's request as-is
+                    PrimaryAgent-->>TaskAgent: Forward reviewer's change request
+                end
+                TaskAgent->>Worktree: Apply instructions
                 TaskAgent->>PrimaryAgent: Notify updated change for approval
                 loop Until human approves
                     PrimaryAgent->>PrimaryAgent: Open tmux pane "review-update-{task}" showing full diff
