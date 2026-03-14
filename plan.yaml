@@ -378,7 +378,7 @@ tasks:
 
   - id: 13
     name: planning-planning-md
-    status: pending
+    status: done
     depends_on: [12]
     description: >
       Write skills/planning-tasks/PLANNING.md — task decomposition and dependency tree rules.
