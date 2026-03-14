@@ -6,19 +6,31 @@ sequenceDiagram
     participant PrimaryAgent as Primary Claude Agent
     participant TaskAgent as Task Agent
     participant Worktree as Agent Worktree
-    Note over TaskAgent: Each Task Agent is responsible for shepherding<br/>a single Pull Request from implementation through to merge
     participant PR as Pull Request (Draft → Ready)
     participant GitHubCI as GitHub / CI
     participant LocalMain as Local Main
     participant OriginMain as Origin Main
 
-    Human->>PrimaryAgent: Delegate projects/tasks
-    Note over Human,PrimaryAgent: Human may send new commands or tasks to Primary Agent at any time
-    PrimaryAgent->>TaskAgent: Spawn Task Agent per project/task
-    loop For each assigned project/task
+    Note over TaskAgent: Each Task Agent is responsible for shepherding<br/>a single Pull Request from implementation through to merge
+
+    rect rgb(30, 30, 60)
+        Note over Human,PrimaryAgent: Planning Phase
+        Human->>PrimaryAgent: Assign projects / tasks
+        Note over Human,PrimaryAgent: Human may send new commands or tasks to Primary Agent at any time
+        PrimaryAgent->>PrimaryAgent: Break work into atomic tasks
+        PrimaryAgent->>PrimaryAgent: Identify task dependencies and potential worktree conflicts
+        PrimaryAgent->>PrimaryAgent: Determine which tasks can run in parallel
+        PrimaryAgent->>Human: Propose parallel task plan (safe tasks) and deferred task list (conflicting tasks)
+        Human->>PrimaryAgent: Approve task plan
+    end
+
+    loop For each approved parallel task batch
+        PrimaryAgent->>TaskAgent: Spawn Task Agent with assigned task and worktree
+        Note over PrimaryAgent,TaskAgent: Conflicting tasks are deferred until in-flight merges complete
+
         TaskAgent->>Worktree: Create worktree and implement initial changes
-        TaskAgent->>PrimaryAgent: Request human approval to open PR
-        PrimaryAgent->>PrimaryAgent: Open tmux pane "review-{project/task}" showing change diff
+        TaskAgent->>PrimaryAgent: Request approval to open PR
+        PrimaryAgent->>PrimaryAgent: Open tmux pane "review-{task}" showing change diff
         alt Human approves
             PrimaryAgent->>PrimaryAgent: Close tmux pane
             PrimaryAgent-->>TaskAgent: Approval granted
@@ -27,10 +39,11 @@ sequenceDiagram
             PrimaryAgent->>PrimaryAgent: Close tmux pane
             PrimaryAgent-->>TaskAgent: Forward change requests
             TaskAgent->>Worktree: Apply requested changes
-            TaskAgent->>PrimaryAgent: Request human approval to open PR
-            PrimaryAgent->>PrimaryAgent: Open tmux pane "review-{project/task}" showing change diff
+            TaskAgent->>PrimaryAgent: Request approval to open PR
+            PrimaryAgent->>PrimaryAgent: Open tmux pane "review-{task}" showing change diff
             Note over PrimaryAgent: Repeat until approved
         end
+
         TaskAgent->>PR: Open draft pull request
         PR->>PrimaryAgent: Notify PR opened (include URL)
         PR-->>GitHubCI: Trigger CI checks on draft
@@ -52,7 +65,7 @@ sequenceDiagram
                 PR-->>TaskAgent: Notify changes requested
                 TaskAgent->>Worktree: Apply requested modifications
                 TaskAgent->>PrimaryAgent: Notify updated change for approval
-                PrimaryAgent->>PrimaryAgent: Open tmux pane "review-update-{project/task}" showing change diff
+                PrimaryAgent->>PrimaryAgent: Open tmux pane "review-update-{task}" showing change diff
                 alt Human approves
                     PrimaryAgent->>PrimaryAgent: Close tmux pane
                     PrimaryAgent-->>TaskAgent: Approves updated change
@@ -64,7 +77,7 @@ sequenceDiagram
                     PrimaryAgent-->>TaskAgent: Forward change requests
                     TaskAgent->>Worktree: Apply requested modifications
                     TaskAgent->>PrimaryAgent: Notify updated change for approval
-                    PrimaryAgent->>PrimaryAgent: Open tmux pane "review-update-{project/task}" showing change diff
+                    PrimaryAgent->>PrimaryAgent: Open tmux pane "review-update-{task}" showing change diff
                     Note over PrimaryAgent: Repeat until approved
                 end
             else Ambiguous comments
@@ -84,8 +97,11 @@ sequenceDiagram
             PrimaryAgent->>Worktree: Remove merged task worktree
         end
         LocalMain->>PrimaryAgent: Notify local main updated
-        PrimaryAgent->>Worktree: Rebase all agent worktrees onto local main
+        PrimaryAgent->>Worktree: Rebase all remaining agent worktrees onto local main
+        PrimaryAgent->>PrimaryAgent: Unblock deferred tasks that depended on this merge
+        PrimaryAgent->>Human: Propose next batch of previously deferred tasks (if any)
     end
 
     Note over PrimaryAgent,Worktree: Primary Agent ensures all agent worktrees are rebased onto local main after each merge
 ```
+
