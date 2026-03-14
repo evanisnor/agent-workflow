@@ -94,7 +94,20 @@ sequenceDiagram
                     TaskAgent->>PrimaryAgent: Notify updated change for approval
                     PrimaryAgent->>PrimaryAgent: Open tmux pane "review-update-{task}" showing full diff
                     PrimaryAgent->>Human: Present full diff for review
-                    Note over Human,PrimaryAgent: Repeat until approved
+                    Note over Human,PrimaryAgent: Repeat until approved, then commit and push as per approved branch
+                    Human->>PrimaryAgent: Approval granted
+                    PrimaryAgent->>PrimaryAgent: Close tmux pane
+                    PrimaryAgent-->>TaskAgent: Approves updated change
+                    TaskAgent->>PR: Push approved change
+                    PR-->>GitHubCI: Trigger CI checks
+                    alt CI checks fail
+                        GitHubCI-->>PR: Report CI failures
+                        PR-->>TaskAgent: Notify CI failures
+                        TaskAgent->>PR: Fix issues and push updates (no approval needed)
+                        PR-->>GitHubCI: Re-run CI checks
+                    else CI checks pass
+                        GitHubCI-->>PR: Report CI success
+                    end
                 end
             else Ambiguous comments
                 PR-->>TaskAgent: Notify feedback unclear
