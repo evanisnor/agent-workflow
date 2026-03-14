@@ -172,7 +172,7 @@ tasks:
 
   - id: 7
     name: orchestrating-agent-scripts
-    status: pending
+    status: done
     depends_on: [4, 5]
     description: >
       Write two agent spawning scripts in skills/orchestrating-agents/scripts/:
