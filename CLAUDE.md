@@ -66,7 +66,7 @@ agent-workflow/
 
 **`settings.json`** (plugin root, committed) — activates Orchestrating Agent as default, provides fallback values under `defaults.*`.
 
-**`.agent-workflow.json`** (project root, gitignored) — per-project overrides: `plan_storage.repo_path`, `worktree.base_dir`, `git.protected_branches`, `build.*` commands, `jira.*`, `sandbox.*`.
+**`.agent-workflow.json`** (project root, gitignored) — per-project overrides: `plan_storage.repo_path`, `worktree.base_dir`, `git.protected_branches`, `jira.*`, `sandbox.*`.
 
 **Resolution priority:** `epic.config.*` (per-epic in plan YAML) → `.agent-workflow.json defaults.*` → `settings.json defaults.*`
 

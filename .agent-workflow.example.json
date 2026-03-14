@@ -15,13 +15,6 @@
     "enabled": true
   },
 
-  "build": {
-    "test_command": "npm run test",
-    "lint_command": "npm run lint",
-    "build_command": "npm run build",
-    "extra_allow_commands": []
-  },
-
   "sandbox": {
     "network": {
       "allowed_domains": ["github.com", "api.github.com", "registry.npmjs.org"]

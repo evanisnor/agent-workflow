@@ -62,14 +62,6 @@ fi
 BASE_DENY_READ='["~/.ssh/**","~/.gnupg/**","**/.env","**/*.pem","**/*.key"]'
 ALL_DENY_READ="$(jq -n --argjson base "${BASE_DENY_READ}" --argjson extra "${EXTRA_DENY_READ}" '$base + $extra')"
 
-# Build extra allow commands from config
-EXTRA_ALLOW=""
-if [[ -f "${PWD}/.agent-workflow.json" ]]; then
-  while IFS= read -r cmd; do
-    [[ -n "${cmd}" ]] && EXTRA_ALLOW="${EXTRA_ALLOW}
-      \"Bash(${cmd})\","
-  done < <(jq -r '.build.extra_allow_commands // [] | .[]' "${PWD}/.agent-workflow.json" 2>/dev/null || true)
-fi
 
 AGENT_CONFIG="$(cat <<EOF
 {
@@ -95,14 +87,11 @@ AGENT_CONFIG="$(cat <<EOF
       "Bash(git status *)",
       "Bash(git diff *)",
       "Bash(git log *)",
-      "Bash(${TEST_CMD} *)",
-      "Bash(${LINT_CMD} *)",
-      "Bash(${BUILD_CMD} *)",
       "Bash(gh pr create *)",
       "Bash(gh pr ready *)",
       "Bash(gh pr merge --auto *)",
       "Bash(gh pr view *)",
-      "Bash(gh run view *)"${EXTRA_ALLOW}
+      "Bash(gh run view *)"
     ],
     "deny": [${BRANCH_DENY_RULES}
       "Bash(gh pr merge *)",

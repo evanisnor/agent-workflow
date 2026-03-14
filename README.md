@@ -56,11 +56,6 @@ Edit `.agent-workflow.json`:
   },
   "git": {
     "protected_branches": ["main"]
-  },
-  "build": {
-    "test_command": "npm run test",
-    "lint_command": "npm run lint",
-    "build_command": "npm run build"
   }
 }
 ```

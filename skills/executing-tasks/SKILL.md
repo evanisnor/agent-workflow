@@ -51,9 +51,9 @@ You do **not** plan work, spawn other agents, or make decisions about tasks beyo
 
 Complete all of the following before requesting diff approval:
 
-- [ ] Run `$TEST_CMD` — all tests pass.
-- [ ] Run `$LINT_CMD` — no lint errors.
-- [ ] Run `$BUILD_CMD` — build succeeds.
+- [ ] Run the project's test command — all tests pass.
+- [ ] Run the project's lint command — no lint errors.
+- [ ] Run the project's build command — build succeeds.
 - [ ] Verify no files outside the task's stated scope were modified.
 - [ ] Confirm branch is rebased onto latest local `main` (`git rebase origin/main`).
 

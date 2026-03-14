@@ -95,15 +95,6 @@ JIRA_ENABLED="$(_cfg '.jira.enabled' '.defaults.jira_enabled // empty' 'true')"
 # JIRA_BASE_URL comes from the environment; not stored in config files
 export JIRA_BASE_URL="${JIRA_BASE_URL:-}"
 
-export TEST_CMD
-TEST_CMD="$(_cfg '.build.test_command' '.defaults.test_command // empty' 'npm run test')"
-
-export LINT_CMD
-LINT_CMD="$(_cfg '.build.lint_command' '.defaults.lint_command // empty' 'npm run lint')"
-
-export BUILD_CMD
-BUILD_CMD="$(_cfg '.build.build_command' '.defaults.build_command // empty' 'npm run build')"
-
 # ALLOWED_DOMAINS as a bash array
 _domains_raw="$(_cfg_array '.sandbox.network.allowed_domains' '.defaults.allowed_domains' '["github.com","api.github.com","registry.npmjs.org"]')"
 export ALLOWED_DOMAINS
