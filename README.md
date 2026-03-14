@@ -179,15 +179,23 @@ CI scripts (`watch-ci.sh`, `watch-merge-queue.sh`, `watch-pr-status.sh`) emit st
 
 ### Human approval gates
 
-Despite the automation, these operations always require your explicit approval:
+The agents handle routine work autonomously, but every decision that materially affects the codebase or project state requires your explicit sign-off. Here is where you are always in the loop:
 
-| Operation | Gate |
-|---|---|
-| Spawning a Planning Agent | You approve |
-| Spawning a batch of Task Agents | You approve |
-| Opening a PR (diff review) | You approve the diff |
-| Merging (after reviewer approval + CI) | Merge queue; you control reviewer approval |
-| Abandoning a task | You approve |
+**Spawning a Planning Agent** — before any work is decomposed, the Orchestrating Agent asks for your approval. You can provide context, adjust scope, or decline.
+
+**Approving the plan** — the Planning Agent presents the full dependency tree to you via the Orchestrating Agent before anything is saved. You can request changes and iterate until the plan reflects your intent.
+
+**Spawning Task Agents** — before any code is written, the Orchestrating Agent presents the batch of tasks it intends to start and asks for your go-ahead. You can hold back specific tasks or adjust the batch.
+
+**Diff review before a PR opens** — every Task Agent must have its diff reviewed and approved by you before a draft PR is created. The Orchestrating Agent opens a tmux window showing the full `git diff HEAD`. No PR is opened without your sign-off, and you can reject with specific feedback that gets forwarded to the Task Agent.
+
+**Reviewer-requested changes** — when a PR reviewer asks for changes, the Orchestrating Agent presents the request to you before the Task Agent acts on it. You decide whether to approve the requested change or push back on the reviewer. A second diff review happens before the updated code is pushed.
+
+**CI failures beyond the retry limit** — Task Agents fix CI failures autonomously up to a configurable limit (default: 3 attempts). If the limit is exceeded, the Orchestrating Agent escalates to you with a summary of what failed and what was tried.
+
+**Merge conflicts** — if a rebase or merge queue conflict cannot be resolved cleanly, the Orchestrating Agent surfaces it to you for guidance before any conflicting changes are pushed.
+
+**Abandoning a task** — marking a task cancelled and unblocking or re-planning its dependents requires your approval.
 
 ## Jira Integration
 
