@@ -111,6 +111,15 @@ For each task, once a Task Agent has implemented the work and passed its pre-PR 
 
 After you approve a diff, the Task Agent opens a draft PR, watches CI, marks the PR ready when CI passes, and adds it to the merge queue. You are notified of CI failures that exceed the retry limit, reviewer change requests, and merge queue issues. Everything else is handled automatically.
 
+**When a reviewer requests changes**, the loop works like this:
+
+1. The Task Agent detects the review decision and notifies the Orchestrating Agent.
+2. The Orchestrating Agent presents the requested change to you, along with a direct link to the reviewer's comment on the PR so you can respond to them directly if needed.
+3. You approve or reject the requested change. If you reject it, the Orchestrating Agent sends your reasoning back to the Task Agent to relay to the reviewer.
+4. Once you approve, the Task Agent implements the change, runs the pre-PR checklist, and pushes. It then replies to the reviewer's comment with a link to the commit that addresses the feedback.
+5. The Orchestrating Agent opens a new tmux diff pane for your confirmation before the push goes through.
+6. This repeats until the reviewer approves.
+
 ## Use Case Examples
 
 ### New feature from scratch
