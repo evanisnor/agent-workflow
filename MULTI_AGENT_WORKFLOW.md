@@ -279,7 +279,66 @@ shepherding-pull-requests/
 |---|---|---|
 | Task Agent spawning | Claude Agent SDK | Programmatic subprocess; structured context passing and result handling |
 | Plan Storage | Dedicated git repository | Versioned, shareable across machines |
+| Plan document format | YAML | Structured, Jira-compatible, human-readable, easy to parse in scripts |
 | Worktree location | Native git worktrees per repo | All active worktrees tracked in `~/.agents/` for Primary Agent visibility |
+
+### Plan Document Structure
+
+Plans are stored as YAML files in the plan repository, one file per Epic. They are created from prompts, Jira issues, or PRDs with Figma designs, and must carry all context needed for the Primary Agent to plan and delegate work without referencing the original source again.
+
+**Repository layout:**
+```
+plans/
+  EPIC-123.yaml
+  EPIC-124.yaml
+  README.md
+```
+
+**YAML schema:**
+```yaml
+epic:
+  id: EPIC-123                          # Jira key or generated slug
+  title: "Feature: User Authentication"
+  status: planning | active | complete  # Epic-level status
+
+  # Origin — where this work came from
+  source:
+    type: jira | prd | prompt
+    ref: "EPIC-123"                     # Jira key, URL, or inline prompt text
+    prd_url: "https://..."              # Optional: link to PRD document
+    figma_designs:
+      - url: "https://figma.com/..."
+        description: "Login screen wireframe"
+
+  # Additional context for agents
+  context: |
+    Free-form background, constraints, acceptance criteria,
+    or any other information agents need to execute tasks correctly.
+
+  tasks:
+    - id: TASK-1
+      title: "Implement login endpoint"
+      description: "POST /auth/login accepting email+password, returning JWT"
+      depends_on: []
+      status: pending | in_progress | done | blocked | cancelled | failed
+      # Runtime fields — populated by Primary Agent during execution
+      worktree: "~/.agents/my-repo/TASK-1"   # null until spawned
+      pr_url: null                             # null until PR opened
+      agent_id: null                           # null until Task Agent spawned
+      branch: null                             # null until worktree created
+
+    - id: TASK-2
+      title: "Add JWT middleware"
+      description: "Express middleware to validate JWT on protected routes"
+      depends_on: [TASK-1]
+      status: pending
+      worktree: null
+      pr_url: null
+      agent_id: null
+      branch: null
+```
+
+The Primary Agent reads and writes these YAML files via `load-plan.sh` / `save-plan.sh` as the dependency tree evolves. Task status, worktree paths, PR URLs, and agent IDs are updated in-place as work progresses and committed to the plan repository.
 
 ### Skill Design Principles
 
