@@ -572,6 +572,46 @@ tasks:
             log text verbatim.
           - Reference: Security → Prompt Injection section of SPEC.md.
 
+  - id: 22
+    name: diff-mode-config
+    status: pending
+    depends_on: [19, 21]
+    description: >
+      Add configurable diff display mode (split/unified) and an in-review toggle so the
+      user can switch modes without leaving the review flow.
+
+      The mode controls how delta renders the diff: side-by-side ("split") or unified
+      ("unified", the default when delta is absent). When delta is not installed, this
+      setting has no effect.
+
+      Changes required:
+
+        .agent-workflow.example.json:
+          - Add "diff": { "mode": "split" } to the config schema.
+          - Valid values: "split" (delta --side-by-side) or "unified" (delta default).
+
+        scripts/config.sh:
+          - Export DIFF_MODE, read from .diff.mode in project config, fallback to
+            settings.json defaults.diff_mode, hardcoded fallback "split".
+
+        settings.json:
+          - Add "defaults": { "diff_mode": "split" } alongside existing defaults.
+
+        skills/orchestrating-agents/scripts/open-review-pane.sh:
+          - Accept an optional third argument <mode> ("split" or "unified").
+            If omitted, read DIFF_MODE from the environment (sourced via config.sh).
+          - Pass --side-by-side to delta when mode is "split"; omit it when "unified".
+
+        skills/orchestrating-agents/REVIEW.md (skill-level toggle):
+          - After opening a review pane, the Orchestrating Agent must offer the user a
+            one-word toggle: responding "split" or "unified" closes the current pane and
+            re-opens it with open-review-pane.sh using the requested mode.
+          - This is handled entirely in the skill (REVIEW.md) without a separate script:
+            the agent closes the pane (close-review-pane.sh), re-invokes
+            open-review-pane.sh with the new mode, and continues the review loop.
+          - The chosen mode persists only for the current review session; it does not
+            write back to config.
+
   - id: 21
     name: tmux-pane-split
     status: done
