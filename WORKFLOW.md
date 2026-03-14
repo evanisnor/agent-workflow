@@ -102,20 +102,55 @@ sequenceDiagram
             else All approvals & CI pass
                 PR-->>TaskAgent: Ready to Merge
                 TaskAgent->>PR: Add PR to Merge Queue
+                PR->>PrimaryAgent: Notify PR added to Merge Queue
+                alt Merge succeeds
+                    PR-->>LocalMain: Merge pull request
+                    par
+                        LocalMain->>OriginMain: Rebase local main onto origin main (remove duplicates)
+                        OriginMain-->>LocalMain: Local main synced with origin main
+                    and
+                        PrimaryAgent->>Worktree: Remove merged task worktree
+                    end
+                    LocalMain->>PrimaryAgent: Notify local main updated
+                    PrimaryAgent->>Worktree: Rebase all remaining agent worktrees onto local main
+                    PrimaryAgent->>PrimaryAgent: Unblock tasks in dependency tree that depended on this merge
+                    PrimaryAgent->>Human: Present updated task dependency tree (if remaining tasks exist)
+                else Merge fails with conflicts
+                    PR-->>TaskAgent: Notify merge conflicts
+                    TaskAgent->>Worktree: Resolve conflicts
+                    TaskAgent->>PrimaryAgent: Notify conflict resolution for approval
+                    PrimaryAgent->>PrimaryAgent: Open tmux pane "review-conflict-{task}" showing full diff
+                    PrimaryAgent->>Human: Present full diff for review
+                    alt Human approves
+                        Human->>PrimaryAgent: Approval granted
+                        PrimaryAgent->>PrimaryAgent: Close tmux pane
+                        PrimaryAgent-->>TaskAgent: Approval granted
+                        TaskAgent->>PR: Push conflict resolution
+                        PR-->>GitHubCI: Trigger CI checks
+                        alt CI checks fail
+                            GitHubCI-->>PR: Report CI failures
+                            PR-->>TaskAgent: Notify CI failures
+                            TaskAgent->>PR: Fix issues and push updates (no approval needed)
+                            PR-->>GitHubCI: Re-run CI checks
+                        else CI checks pass
+                            GitHubCI-->>PR: Report CI success
+                        end
+                    else Human rejects with reason
+                        Human->>PrimaryAgent: Rejection with specific reason
+                        PrimaryAgent->>PrimaryAgent: Close tmux pane
+                        PrimaryAgent-->>TaskAgent: Forward rejection reason as change requests
+                        TaskAgent->>Worktree: Apply requested modifications
+                        Note over TaskAgent,Worktree: Worktree persists until merge succeeds
+                    end
+                else Merge fails with unrelated CI errors
+                    PR-->>PrimaryAgent: Notify merge failure due to CI errors
+                    PrimaryAgent->>Human: Notify merge failure with CI error details
+                    Human->>PrimaryAgent: Provide instructions
+                    PrimaryAgent-->>TaskAgent: Forward instructions
+                    Note over TaskAgent,Worktree: Worktree persists until merge succeeds
+                end
             end
         end
-
-        PR-->>LocalMain: Merge pull request
-        par
-            LocalMain->>OriginMain: Rebase local main onto origin main (remove duplicates)
-            OriginMain-->>LocalMain: Local main synced with origin main
-        and
-            PrimaryAgent->>Worktree: Remove merged task worktree
-        end
-        LocalMain->>PrimaryAgent: Notify local main updated
-        PrimaryAgent->>Worktree: Rebase all remaining agent worktrees onto local main
-        PrimaryAgent->>PrimaryAgent: Unblock tasks in dependency tree that depended on this merge
-        PrimaryAgent->>Human: Present updated task dependency tree (if remaining tasks exist)
     end
 
     Note over PrimaryAgent,Worktree: Primary Agent ensures all agent worktrees are rebased onto local main after each merge
