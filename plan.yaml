@@ -450,7 +450,7 @@ tasks:
 
   - id: 15
     name: executing-scripts
-    status: pending
+    status: done
     depends_on: [4]
     description: >
       Write all five scripts in skills/executing-tasks/scripts/:
