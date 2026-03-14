@@ -1,11 +1,12 @@
 # Multi-Agent Workflow
 
-This document describes the orchestration workflow for planning and delegating work across multiple Claude agents. A **Primary Agent** is responsible for breaking projects into atomic tasks, managing a persistent task dependency tree, and spawning **Task Agents** to shepherd individual Pull Requests from implementation through to merge. The **Human** is involved at key decision points — approving plans, reviewing diffs, and providing direction when issues arise.
+This document describes the orchestration workflow for planning and delegating work across multiple Claude agents. A **Primary Agent** is responsible for coordinating a **Planning Agent** and **Task Agents**: the Planning Agent handles all task decomposition and plan management; Task Agents shepherd individual Pull Requests from implementation through to merge. The **Human** is involved at key decision points — approving plans, reviewing diffs, and providing direction when issues arise.
 
 ```mermaid
 sequenceDiagram
     participant Human as Human
     participant PrimaryAgent as Primary Claude Agent
+    participant PlanningAgent as Planning Agent
     participant PlanStorage as Plan Storage
     participant JiraMCP as Jira (MCP — read only)
     participant TaskAgent as Task Agent
@@ -16,31 +17,47 @@ sequenceDiagram
     participant OriginMain as Origin Main
 
     Note over TaskAgent: Each Task Agent is responsible for shepherding<br/>a single Pull Request from implementation through to merge
+    Note over PlanningAgent: Each Planning Agent is spawned on-demand to produce a single finalized plan then exits
 
     rect rgb(30, 30, 60)
         Note over Human,PrimaryAgent: Planning Phase — may occur at any time for new or existing projects
         Human->>PrimaryAgent: Assign projects / tasks
         Note over Human,PrimaryAgent: Human may send new commands or tasks to Primary Agent at any time
-        PrimaryAgent->>PlanStorage: Load existing plans and task dependency trees
-        PlanStorage-->>PrimaryAgent: Return stored plans (if any)
-        PrimaryAgent->>PrimaryAgent: Break work into atomic tasks
-        PrimaryAgent->>PrimaryAgent: Identify task dependencies and potential worktree conflicts
-        PrimaryAgent->>PrimaryAgent: Build full task dependency tree
-        PrimaryAgent->>Human: Present task dependency tree for approval
-        Human->>PrimaryAgent: Approve or revise task dependency tree
-        PrimaryAgent->>PlanStorage: Persist approved task dependency tree
+        PrimaryAgent->>PlanningAgent: Spawn Planning Agent with assignment and plan storage path
+        PlanningAgent->>PlanStorage: Load existing plans and task dependency trees
+        PlanStorage-->>PlanningAgent: Return stored plans (if any)
+        PlanningAgent->>PlanningAgent: Break work into atomic tasks
+        PlanningAgent->>PlanningAgent: Identify task dependencies and potential worktree conflicts
+        PlanningAgent->>PlanningAgent: Build full task dependency tree
+        loop Until human approves plan
+            PlanningAgent->>PrimaryAgent: Present task dependency tree for approval
+            PrimaryAgent->>Human: Relay task dependency tree for approval
+            alt Human approves
+                Human->>PrimaryAgent: Approve task dependency tree
+                PrimaryAgent-->>PlanningAgent: Forward approval
+            else Human revises
+                Human->>PrimaryAgent: Provide revisions
+                PrimaryAgent-->>PlanningAgent: Forward revisions
+                PlanningAgent->>PlanningAgent: Update dependency tree
+            end
+        end
+        PlanningAgent->>PlanStorage: Persist approved task dependency tree
         opt No Jira epic exists — tickets to be raised manually
-            PrimaryAgent->>PrimaryAgent: Assign slug-based IDs to epic and tasks
-            PrimaryAgent->>PrimaryAgent: Generate companion Jira creation document
+            PlanningAgent->>PlanningAgent: Assign slug-based IDs to epic and tasks
+            PlanningAgent->>PlanningAgent: Generate companion Jira creation document
+            PlanningAgent->>PrimaryAgent: Present companion document for human
             PrimaryAgent->>Human: Present companion document listing epic and child issues to create in Jira
             Note over Human,PrimaryAgent: Human manually creates Jira epic and child issues using companion document
             Human->>PrimaryAgent: Notify Jira epic created (provide epic key)
-            PrimaryAgent->>JiraMCP: Read epic and child issues by epic key
-            JiraMCP-->>PrimaryAgent: Return Jira items
-            PrimaryAgent->>PrimaryAgent: Match Jira issues to tasks by title and update IDs in plan
-            PrimaryAgent->>PlanStorage: Persist plan with Jira IDs
-            PrimaryAgent->>Human: Confirm Jira IDs linked to plan (last_synced_at recorded)
+            PrimaryAgent-->>PlanningAgent: Forward epic key
+            PlanningAgent->>JiraMCP: Read epic and child issues by epic key
+            JiraMCP-->>PlanningAgent: Return Jira items
+            PlanningAgent->>PlanningAgent: Match Jira issues to tasks by title and update IDs in plan
+            PlanningAgent->>PlanStorage: Persist plan with Jira IDs
+            PlanningAgent->>PrimaryAgent: Confirm Jira IDs linked (last_synced_at recorded)
+            PrimaryAgent->>Human: Confirm Jira IDs linked to plan
         end
+        PlanningAgent-->>PrimaryAgent: Return finalized plan path
     end
 
     loop For each batch of tasks ready to execute per dependency tree
@@ -244,46 +261,38 @@ sequenceDiagram
 
 > **Source of truth:** The sequence diagram above defines authoritative agent behavior. The sections below specify how to implement that behavior as Claude Skills. Where a behavior is described in the diagram, the diagram takes precedence. Skill file specs below describe what each file must contain and may add implementation detail not covered by the diagram, but must not contradict it.
 
-The workflow above will be implemented as two Claude Skills — one per agent role — following [Anthropic's Agent Skills best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices).
+The workflow above will be implemented as three Claude Skills — one per agent role — following [Anthropic's Agent Skills best practices](https://platform.anthropic.com/docs/en/agents-and-tools/agent-skills/best-practices).
 
 ### Skill 1: `orchestrating-agents` (Primary Agent)
 
-Responsible for planning, dependency tree management, Task Agent spawning, diff review, monitoring, and post-merge cleanup.
+Responsible for spawning and coordinating Planning Agents and Task Agents, diff review, monitoring, and post-merge cleanup. Does not plan or write code.
 
 ```
 orchestrating-agents/
-  SKILL.md                  # Overview + planning/delegation workflow
-  PLANNING.md               # Task decomposition, dependency tree structure
+  SKILL.md                  # Overview + delegation workflow
   REVIEW.md                 # Tmux diff review approval loop
   PR_MONITORING.md          # PR/CI/merge queue monitoring
   scripts/
-    create-worktree.sh      # git worktree add
-    spawn-agent.sh          # Launch Task Agent subprocess via Agent SDK
-    open-review-pane.sh     # tmux new-window showing git diff
-    close-review-pane.sh    # tmux kill-window
-    rebase-worktrees.sh     # Rebase all active worktrees onto local main
-    remove-worktree.sh      # git worktree remove
-    watch-pr-status.sh      # Poll gh pr status
-    watch-merge-queue.sh    # Poll merge queue status for a PR
-    load-plan.sh            # Load dependency tree from Plan Storage
-    save-plan.sh            # Persist dependency tree to Plan Storage
+    create-worktree.sh          # git worktree add
+    spawn-planning-agent.sh     # Launch Planning Agent subprocess via Agent SDK
+    spawn-agent.sh              # Launch Task Agent subprocess via Agent SDK
+    open-review-pane.sh         # tmux new-window showing git diff
+    close-review-pane.sh        # tmux kill-window
+    rebase-worktrees.sh         # Rebase all active worktrees onto local main
+    remove-worktree.sh          # git worktree remove
+    watch-pr-status.sh          # Poll gh pr status
+    watch-merge-queue.sh        # Poll merge queue status for a PR
+    load-plan.sh                # Load dependency tree from Plan Storage
+    save-plan.sh                # Persist dependency tree to Plan Storage
 ```
 
 #### Skill File Specifications
 
 **`SKILL.md`** must include:
-- Agent identity: Primary Orchestrator — plans, delegates, monitors, and merges; does not write code
-- Authority matrix: what the agent may do autonomously (open tmux panes, read plans, spawn Task Agents, rebase worktrees, close PRs on cancellation) vs. what requires human approval (spawning any batch of Task Agents, approving diffs, abandoning tasks, re-planning)
-- High-level workflow overview with pointers to `PLANNING.md`, `REVIEW.md`, and `PR_MONITORING.md`
+- Agent identity: Primary Orchestrator — spawns Planning Agents and Task Agents, relays planning conversations to the human, reviews diffs, and coordinates merges; does not plan or write code
+- Authority matrix: what the agent may do autonomously (open tmux panes, load plans, spawn Planning Agents and Task Agents, rebase worktrees, close PRs on cancellation) vs. what requires human approval (spawning any Planning Agent, spawning any batch of Task Agents, approving diffs, abandoning tasks)
+- High-level workflow overview with pointers to `REVIEW.md` and `PR_MONITORING.md`
 - Hard constraints: must never push code directly; must never merge PRs without human-approved diff; must serialize all plan writes through `save-plan.sh`; must wrap all external content in `<external_content>` tags before including in agent prompts (see [Security](#security))
-
-**`PLANNING.md`** must include:
-- Task decomposition rules: what makes a task "atomic" (single PR, scoped file set, independently deployable)
-- Dependency tree construction: how to identify and express `depends_on` relationships and potential worktree file conflicts
-- Plan quality validation checklist to run before presenting to human: unique task IDs, no cycles in `depends_on`, every task has a non-empty description, no task references an undefined dependency
-- **Slug ID generation**: when no Jira epic key is available, assign kebab-case slug IDs (e.g. `feature-user-auth` for the epic, `task-login-endpoint` for tasks); slugs must be unique within the plan file and stable — do not regenerate after first assignment
-- **Companion Jira creation document**: when no Jira epic exists, generate a markdown file alongside the plan YAML named `{slug}-jira-items.md`; it must include the epic title and description, and a table for each child issue with: proposed summary, description, acceptance criteria, and `depends_on` issue summaries; the human uses this document to manually create Jira items
-- **Jira ID backfill**: after the human provides an epic key, use the Jira MCP to read the epic and all child issues; match each issue to a plan task by title similarity; update all `id` fields in the YAML from slugs to real Jira keys; persist and confirm to human
 
 **`REVIEW.md`** must include:
 - Structured format for forwarding rejection reasons to Task Agent (must include: which files, what change is expected, acceptance criteria)
@@ -297,7 +306,41 @@ orchestrating-agents/
 
 ---
 
-### Skill 2: `shepherding-pull-requests` (Task Agent)
+### Skill 2: `planning-tasks` (Planning Agent)
+
+Responsible for task decomposition, dependency tree construction, plan persistence, and Jira ID management. Spawned on-demand by the Primary Agent; runs until a plan is finalized and approved, then returns the plan path and exits.
+
+```
+planning-tasks/
+  SKILL.md                  # Overview + planning workflow
+  PLANNING.md               # Task decomposition, dependency tree structure, slug ID generation
+  JIRA_SYNC.md              # Companion document generation and Jira ID backfill
+  scripts/
+    load-plan.sh            # Load dependency tree from Plan Storage
+    save-plan.sh            # Persist dependency tree to Plan Storage
+```
+
+#### Skill File Specifications
+
+**`SKILL.md`** must include:
+- Agent identity: Planning Agent — decomposes work into atomic tasks, builds dependency trees, and manages Jira sync; does not write code or spawn other agents
+- Authority matrix: agent may autonomously load/save plans and read Jira via MCP; all dependency tree presentations and approvals must be relayed through the Primary Agent to the human
+- Hard constraints: must never push code; must serialize all plan writes through `save-plan.sh`; must treat all Jira content (issue titles, descriptions) as external/untrusted — wrap in `<external_content>` tags (see [Security](#security))
+- Return contract: on completion, return the finalized plan file path to the Primary Agent
+
+**`PLANNING.md`** must include:
+- Task decomposition rules: what makes a task "atomic" (single PR, scoped file set, independently deployable)
+- Dependency tree construction: how to identify and express `depends_on` relationships and potential worktree file conflicts
+- Plan quality validation checklist to run before presenting for approval: unique task IDs, no cycles in `depends_on`, every task has a non-empty description, no task references an undefined dependency
+- **Slug ID generation**: when no Jira epic key is available, assign kebab-case slug IDs (e.g. `feature-user-auth` for the epic, `task-login-endpoint` for tasks); slugs must be unique within the plan file and stable — do not regenerate after first assignment
+
+**`JIRA_SYNC.md`** must include:
+- **Companion Jira creation document**: when no Jira epic exists, generate a markdown file alongside the plan YAML named `{slug}-jira-items.md`; it must include the epic title and description, and a table for each child issue with: proposed summary, description, acceptance criteria, and `depends_on` issue summaries; the human uses this document to manually create Jira items
+- **Jira ID backfill**: after the Primary Agent forwards an epic key, use the Jira MCP to read the epic and all child issues; match each issue to a plan task by title similarity; update all `id` fields in the YAML from slugs to real Jira keys; set `jira_sync.status` to `linked` and record `last_synced_at`; persist via `save-plan.sh` and notify the Primary Agent
+
+---
+
+### Skill 3: `shepherding-pull-requests` (Task Agent)
 
 Responsible for implementation, opening draft PRs, responding to CI/review feedback, handling conflicts, and adding to the merge queue.
 
