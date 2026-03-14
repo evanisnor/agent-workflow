@@ -2,7 +2,10 @@
 
 This is the design document for a [Claude Code plugin](https://code.claude.com/docs/en/plugins) that implements a multi-agent software development workflow. Once installed, the plugin provides three Claude Skills — an Orchestrating Agent, a Planning Agent, and Task Agents — that collaborate to take work from initial planning through to merged pull requests.
 
-An **Orchestrating Agent** is responsible for coordinating a **Planning Agent** and **Task Agents**: the Planning Agent handles all task decomposition and plan management; Task Agents execute individual tasks from implementation through to merge. The **Human** is involved at key decision points — approving plans, reviewing diffs, and providing direction when issues arise.
+- **Orchestrating Agent** — coordinates the Planning Agent and Task Agents, reviews diffs, and manages post-merge cleanup; does not plan or write code
+- **Planning Agent** — decomposes work into atomic tasks, builds dependency trees, and manages Jira sync; spawned on-demand and exits once a plan is approved
+- **Task Agents** — each implements a single task in an isolated git worktree and shepherds its pull request from draft through to merge
+- **Human** — approves plans, reviews diffs, and provides direction when issues arise
 
 ```mermaid
 sequenceDiagram
