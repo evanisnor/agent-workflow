@@ -32,18 +32,21 @@ sequenceDiagram
 
         TaskAgent->>Worktree: Create worktree and implement initial changes
         TaskAgent->>PrimaryAgent: Request approval to open PR
-        PrimaryAgent->>PrimaryAgent: Open tmux pane "review-{task}" showing change diff
+        PrimaryAgent->>PrimaryAgent: Open tmux pane "review-{task}" showing full diff
+        PrimaryAgent->>Human: Present full diff for review
         alt Human approves
+            Human->>PrimaryAgent: Approval granted
             PrimaryAgent->>PrimaryAgent: Close tmux pane
             PrimaryAgent-->>TaskAgent: Approval granted
-        else Human requests changes
-            Human->>PrimaryAgent: Prompt with specific change requests
+        else Human rejects with reason
+            Human->>PrimaryAgent: Rejection with specific reason
             PrimaryAgent->>PrimaryAgent: Close tmux pane
-            PrimaryAgent-->>TaskAgent: Forward change requests
+            PrimaryAgent-->>TaskAgent: Forward rejection reason as change requests
             TaskAgent->>Worktree: Apply requested changes
             TaskAgent->>PrimaryAgent: Request approval to open PR
-            PrimaryAgent->>PrimaryAgent: Open tmux pane "review-{task}" showing change diff
-            Note over PrimaryAgent: Repeat until approved
+            PrimaryAgent->>PrimaryAgent: Open tmux pane "review-{task}" showing full diff
+            PrimaryAgent->>Human: Present full diff for review
+            Note over Human,PrimaryAgent: Repeat until approved
         end
 
         TaskAgent->>PR: Open draft pull request
@@ -67,20 +70,23 @@ sequenceDiagram
                 PR-->>TaskAgent: Notify changes requested
                 TaskAgent->>Worktree: Apply requested modifications
                 TaskAgent->>PrimaryAgent: Notify updated change for approval
-                PrimaryAgent->>PrimaryAgent: Open tmux pane "review-update-{task}" showing change diff
+                PrimaryAgent->>PrimaryAgent: Open tmux pane "review-update-{task}" showing full diff
+                PrimaryAgent->>Human: Present full diff for review
                 alt Human approves
+                    Human->>PrimaryAgent: Approval granted
                     PrimaryAgent->>PrimaryAgent: Close tmux pane
                     PrimaryAgent-->>TaskAgent: Approves updated change
                     TaskAgent->>PR: Push approved change
                     PR-->>GitHubCI: Re-run CI checks
-                else Human requests changes
-                    Human->>PrimaryAgent: Prompt with specific change requests
+                else Human rejects with reason
+                    Human->>PrimaryAgent: Rejection with specific reason
                     PrimaryAgent->>PrimaryAgent: Close tmux pane
-                    PrimaryAgent-->>TaskAgent: Forward change requests
+                    PrimaryAgent-->>TaskAgent: Forward rejection reason as change requests
                     TaskAgent->>Worktree: Apply requested modifications
                     TaskAgent->>PrimaryAgent: Notify updated change for approval
-                    PrimaryAgent->>PrimaryAgent: Open tmux pane "review-update-{task}" showing change diff
-                    Note over PrimaryAgent: Repeat until approved
+                    PrimaryAgent->>PrimaryAgent: Open tmux pane "review-update-{task}" showing full diff
+                    PrimaryAgent->>Human: Present full diff for review
+                    Note over Human,PrimaryAgent: Repeat until approved
                 end
             else Ambiguous comments
                 PR-->>TaskAgent: Notify feedback unclear
