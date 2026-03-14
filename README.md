@@ -527,6 +527,120 @@ Each task worktree is created by `create-worktree.sh`. The script must not copy 
 
 ---
 
+## Permissions
+
+Task Agents write files as their primary function — requiring human approval for every file edit would create constant interruptions with no security benefit. The goal is to eliminate approvals for routine, bounded operations while preserving human gates at the decision points that matter: diff review, agent spawning, and merges.
+
+### Strategy: Sandbox + Auto-Allow for Task Agents
+
+The recommended approach is to combine OS-level sandboxing with `bypassPermissions` mode scoped to each Task Agent. The sandbox enforces write boundaries at the OS level (Seatbelt on macOS, bubblewrap on Linux), so `bypassPermissions` is safe within those bounds — the agent cannot escape the worktree regardless of what it attempts.
+
+Each Task Agent is spawned with a settings configuration scoped to its worktree:
+
+```json
+{
+  "sandbox": {
+    "enabled": true,
+    "filesystem": {
+      "allowWrite": ["~/.agents/{repo}/{task-id}/"]
+    },
+    "network": {
+      "allowedDomains": ["github.com", "api.github.com", "registry.npmjs.org"]
+    }
+  },
+  "defaultMode": "bypassPermissions"
+}
+```
+
+This eliminates approval prompts for all routine Task Agent operations: file edits, test runs, linting, git commits, and pushing to its feature branch.
+
+> **Sandbox mode**: Enable the sandbox in **auto-allow mode** (not regular permissions mode). In auto-allow mode, sandboxed commands are automatically approved without prompting. Commands outside the sandbox boundary (e.g. network access to a non-allowed domain) fall back to the standard permission flow.
+
+### Allow Rules for Task Agents
+
+If full sandbox auto-allow is not used, add explicit allow rules to pre-approve the commands Task Agents routinely need:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Edit",
+      "Write",
+      "Bash(git commit *)",
+      "Bash(git push origin *)",
+      "Bash(git rebase *)",
+      "Bash(git fetch *)",
+      "Bash(npm run test *)",
+      "Bash(npm run lint *)",
+      "Bash(npm install)",
+      "Bash(gh pr create *)",
+      "Bash(gh pr ready *)",
+      "Bash(gh pr merge --auto *)",
+      "Bash(gh pr view *)",
+      "Bash(gh run view *)",
+      "Bash(./gradlew *)",
+      "Bash(adb devices)",
+      "Bash(adb shell *)",
+      "Bash(adb logcat *)",
+      "Bash(adb install *)",
+      "Bash(adb uninstall *)"
+    ]
+  }
+}
+```
+
+### Deny Rules: Enforcing Hard Constraints at the Permission Layer
+
+Deny rules enforce Task Agent hard constraints independently of the agent's own reasoning. Even if a Task Agent is manipulated via prompt injection, these rules block the action before it executes:
+
+```json
+{
+  "permissions": {
+    "deny": [
+      "Bash(git push * main)",
+      "Bash(git push * master)",
+      "Bash(gh pr merge *)",
+      "Edit(~/.bashrc)",
+      "Edit(~/.zshrc)",
+      "Edit(//etc/**)",
+      "Edit(//usr/**)"
+    ]
+  }
+}
+```
+
+`Bash(gh pr merge *)` is denied to prevent unilateral merges — only `gh pr merge --auto` (merge queue enrollment) is allowed via the allow rules above.
+
+### Minimum Baseline: `acceptEdits` Mode
+
+If sandboxing is not yet configured, set `defaultMode: "acceptEdits"` for Task Agents as a minimum. This auto-approves the SDK-level permission prompts for individual file write operations. It does not affect the human diff review gate — the Orchestrating Agent still requires human approval of the full diff before a PR is opened.
+
+```json
+{
+  "defaultMode": "acceptEdits"
+}
+```
+
+This does not help with Bash command approvals, but removes the file-write approval class entirely.
+
+### Human Approval: What Remains Gated
+
+After applying the above, the only operations that should require human input are:
+
+| Operation | Gate |
+|---|---|
+| Spawning a Planning Agent | Primary Agent requests human approval |
+| Spawning a batch of Task Agents | Primary Agent requests human approval |
+| Approving a diff before opening PR | tmux diff review loop in `REVIEW.md` |
+| Abandoning a task | Primary Agent requests human approval |
+| Merge conflict resolution (push required) | Task Agent escalates → Primary Agent → Human |
+
+### Do Not Use `bypassPermissions` on the Orchestrating Agent
+
+The Claude Agent SDK propagates `bypassPermissions` to all subagents and it cannot be overridden. Setting it on the Orchestrating Agent means every spawned Task Agent also runs without permission checks — before sandboxing is in effect. The Orchestrating Agent must use targeted allow rules for its known safe operations (tmux, git worktree, plan load/save) instead.
+
+---
+
 ## Retry & Timeout Limits
 
 Default limits apply to all epics unless overridden in `epic.config` (see [Plan Document Structure](#plan-document-structure)).
