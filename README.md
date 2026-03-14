@@ -1,6 +1,8 @@
 # Multi-Agent Workflow
 
-This document describes the orchestration workflow for planning and delegating work across multiple Claude agents. An **Orchestrating Agent** is responsible for coordinating a **Planning Agent** and **Task Agents**: the Planning Agent handles all task decomposition and plan management; Task Agents execute individual tasks from implementation through to merge. The **Human** is involved at key decision points — approving plans, reviewing diffs, and providing direction when issues arise.
+This is the design document for a [Claude Code plugin](https://code.claude.com/docs/en/plugins) that implements a multi-agent software development workflow. Once installed, the plugin provides three Claude Skills — an Orchestrating Agent, a Planning Agent, and Task Agents — that collaborate to take work from initial planning through to merged pull requests.
+
+An **Orchestrating Agent** is responsible for coordinating a **Planning Agent** and **Task Agents**: the Planning Agent handles all task decomposition and plan management; Task Agents execute individual tasks from implementation through to merge. The **Human** is involved at key decision points — approving plans, reviewing diffs, and providing direction when issues arise.
 
 ```mermaid
 sequenceDiagram
