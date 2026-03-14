@@ -572,6 +572,72 @@ tasks:
             log text verbatim.
           - Reference: Security → Prompt Injection section of SPEC.md.
 
+  - id: 23
+    name: agent-status-display
+    status: pending
+    depends_on: [9]
+    description: >
+      Define how the Orchestrating Agent displays a status summary of all active agents,
+      and provide a /agent-workflow:status slash command as a direct entry point.
+
+      There are two trigger paths, both rendering the same output:
+        1. Natural language: the user asks anything resembling "what is the agent status",
+           "show me what the agents are doing", "status update", etc.
+        2. Slash command: /agent-workflow:status — a dedicated skill that instructs the
+           Orchestrating Agent to render the status table immediately.
+
+      Changes required:
+
+        skills/orchestrating-agents/STATUS.md (new file):
+          Define the canonical status template and rendering rules.
+
+          Status table columns:
+            Task ID | Title | Agent Status | Activity | PR | Branch
+
+          Agent Status values (drawn from plan.yaml task.status):
+            pending, in_progress, done, blocked, failed, cancelled
+
+          Activity values (derived by the agent from live plan state + PR/CI context):
+            "waiting to start" | "implementing" | "pre-PR checklist" | "awaiting diff review"
+            | "CI running" | "fixing CI (attempt N/M)" | "awaiting review"
+            | "reviewer requested changes" | "in merge queue" | "merged" | "blocked on <task-id>"
+            | "failed — escalation required"
+
+          Rendering rules:
+            - Render as a markdown table.
+            - Omit tasks with status "pending" that have unmet dependencies (they add noise).
+            - Include pending tasks whose dependencies are all done (they are next up).
+            - Always include all in_progress and blocked/failed tasks regardless of other state.
+            - Sort order: in_progress first, then blocked/failed, then pending (ready), then done.
+            - If no plan is loaded, display: "No active plan. Give me an assignment to get started."
+
+          Example output:
+            ```
+            | Task | Title                  | Status      | Activity              | PR  | Branch                  |
+            |------|------------------------|-------------|-----------------------|-----|-------------------------|
+            | T-3  | Login endpoint         | in_progress | CI running            | #12 | task-login-endpoint     |
+            | T-4  | JWT middleware         | in_progress | awaiting diff review  | —   | task-jwt-middleware     |
+            | T-5  | Protected route guard  | pending     | waiting to start      | —   | —                       |
+            | T-1  | DB schema migration    | done        | merged                | #10 | task-db-schema          |
+            ```
+
+        skills/orchestrating-agents/SKILL.md:
+          - Add a "Status Display" section that references STATUS.md and states:
+            Respond to any status-related natural language query by rendering the status
+            table defined in STATUS.md. Do not summarise in prose — always use the table.
+
+        .claude-plugin/plugin.json:
+          - Register a new skill entry for "status" so /agent-workflow:status is invokable.
+
+        skills/status/ (new skill directory):
+          skills/status/SKILL.md:
+            - Frontmatter: name: status, description: "Display a status table of all active
+              Task Agents, their current activity, and PR state. Invoke with
+              /agent-workflow:status."
+            - Body: a single instruction — render the agent status table per STATUS.md and
+              exit. This skill delegates entirely to the Orchestrating Agent's STATUS.md
+              template; it contains no independent logic.
+
   - id: 22
     name: diff-mode-config
     status: done
