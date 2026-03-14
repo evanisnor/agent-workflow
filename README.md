@@ -102,12 +102,24 @@ sequenceDiagram
         opt Task Agent discovers scope is larger than planned
             TaskAgent->>PrimaryAgent: Notify task scope exceeds original plan
             PrimaryAgent->>Human: Notify task needs re-planning
-            PrimaryAgent->>PlanStorage: Load current dependency tree
-            PlanStorage-->>PrimaryAgent: Return current dependency tree
-            PrimaryAgent->>PrimaryAgent: Split task and update dependency tree
-            PrimaryAgent->>Human: Present revised task dependency tree for approval
-            Human->>PrimaryAgent: Approve or revise
-            PrimaryAgent->>PlanStorage: Persist revised dependency tree
+            PrimaryAgent->>PlanningAgent: Spawn Planning Agent with current plan path and scope-change context
+            PlanningAgent->>PlanStorage: Load current dependency tree
+            PlanStorage-->>PlanningAgent: Return current dependency tree
+            PlanningAgent->>PlanningAgent: Split task and update dependency tree
+            loop Until human approves plan
+                PlanningAgent->>PrimaryAgent: Present revised task dependency tree for approval
+                PrimaryAgent->>Human: Relay revised task dependency tree for approval
+                alt Human approves
+                    Human->>PrimaryAgent: Approval granted
+                    PrimaryAgent-->>PlanningAgent: Forward approval
+                else Human revises
+                    Human->>PrimaryAgent: Provide revisions
+                    PrimaryAgent-->>PlanningAgent: Forward revisions
+                    PlanningAgent->>PlanningAgent: Update dependency tree
+                end
+            end
+            PlanningAgent->>PlanStorage: Persist revised dependency tree
+            PlanningAgent-->>PrimaryAgent: Return finalized plan path
         end
         TaskAgent->>PrimaryAgent: Request approval to open PR
         loop Until human approves
@@ -639,8 +651,6 @@ All project-specific and environment-specific values live in `.agent-workflow.js
 }
 ```
 
-Jira credentials are never stored in `.agent-workflow.json`. They are read from environment variables — see [Plugin Manifest](#plugin-manifest) for the required `JIRA_API_TOKEN` and `JIRA_BASE_URL` variables.
-
 ### Field Reference
 
 | Field | Default | Description |
@@ -662,7 +672,7 @@ Jira credentials are never stored in `.agent-workflow.json`. They are read from 
 
 ### How Scripts Use Settings
 
-A shared `scripts/config.sh` at the plugin root loads configuration using `jq` and exports all values as shell variables. Every skill script sources it at startup using the `${CLAUDE_SKILL_DIR}` variable, which the plugin runtime sets to the skill's own directory:
+A shared `scripts/config.sh` at the plugin root loads configuration using `jq` and exports all values as shell variables. Every skill script sources it at startup using the `${CLAUDE_SKILL_DIR}` variable, which the plugin runtime sets to the skill's own directory (see [Claude Agent SDK — Environment Variables](https://platform.claude.com/docs/en/agent-sdk/overview)):
 
 ```bash
 # At the top of any script
