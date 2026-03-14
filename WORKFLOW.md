@@ -76,8 +76,12 @@ sequenceDiagram
         end
 
         PR-->>LocalMain: Merge pull request
-        LocalMain->>OriginMain: Rebase local main onto origin main (remove duplicates)
-        OriginMain-->>LocalMain: Local main synced with origin main
+        par
+            LocalMain->>OriginMain: Rebase local main onto origin main (remove duplicates)
+            OriginMain-->>LocalMain: Local main synced with origin main
+        and
+            PrimaryAgent->>Worktree: Remove merged task worktree
+        end
         LocalMain->>PrimaryAgent: Notify local main updated
         PrimaryAgent->>Worktree: Rebase all agent worktrees onto local main
     end
