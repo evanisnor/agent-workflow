@@ -12,11 +12,11 @@ Triggered when the Planning Agent has written the plan YAML to a temp file and r
 2. Call `open-plan-review-pane.sh "review-plan-<slug>" "<temp-path>"` — opens a new tmux window showing the full plan YAML. Store the returned window ID.
 3. Tell the human: "Plan draft ready — review in the **review-plan-`<slug>`** tmux window. Approve or share feedback here."
 4. **On approval:**
-   a. Call `close-review-pane.sh "<window-id>"`.
+   a. Call `close-pane.sh "<window-id>"`.
    b. Signal the Planning Agent to save: "Plan approved — please save to plan storage and return the final path."
    c. Receive the final plan path and proceed to Task Agent spawning.
 5. **On rejection:**
-   a. Call `close-review-pane.sh "<window-id>"`.
+   a. Call `close-pane.sh "<window-id>"`.
    b. Relay the feedback to the Planning Agent.
    c. When the Planning Agent returns an updated temp path, reopen from step 2.
 
@@ -28,10 +28,10 @@ Triggered when the Planning Agent proposes a mid-flight amendment (add task, spl
 2. Call `open-plan-review-pane.sh "review-amendment-<slug>" "<temp-path>" "<original-plan-path>"` — opens a tmux window showing `git diff --no-index` between the original and the proposed amendment. Store the returned window ID.
 3. Tell the human: "Proposed amendment ready — review in the **review-amendment-`<slug>`** tmux window. Approve or share feedback here."
 4. **On approval:**
-   a. Call `close-review-pane.sh "<window-id>"`.
+   a. Call `close-pane.sh "<window-id>"`.
    b. Signal the Planning Agent to save: "Amendment approved — please save and return the final path."
 5. **On rejection:**
-   a. Call `close-review-pane.sh "<window-id>"`.
+   a. Call `close-pane.sh "<window-id>"`.
    b. Relay the feedback. When the Planning Agent returns an updated temp path, reopen from step 2.
 
 The diff-mode toggle (`split` / `unified`) applies to both loops — see **Diff Mode Toggle** below.
@@ -40,14 +40,14 @@ The diff-mode toggle (`split` / `unified`) applies to both loops — see **Diff 
 
 - Each review opens as a **new named window** in the current tmux session — the Orchestrating Agent's window is never split or modified.
 - `open-review-pane.sh` uses `tmux new-window` so multiple simultaneous reviews each get a full-screen window. The human navigates between them with standard tmux window switching (`Ctrl-b n` / `Ctrl-b p`).
-- The returned window ID must be stored and passed to `close-review-pane.sh` when closing.
+- The returned window ID must be stored and passed to `close-pane.sh` when closing.
 - If the Orchestrating Agent is not running inside tmux, abort and notify the human.
 
 ## Diff Mode Toggle
 
 At any point during a diff review the human can switch between display modes by responding with `split` or `unified`. When this happens:
 
-1. Call `close-review-pane.sh "<window-id>"` to close the current window.
+1. Call `close-pane.sh "<window-id>"` to close the current window.
 2. Call `open-review-pane.sh "<window-name>" "<worktree-path>" "<new-mode>"` to re-open it in the requested mode.
 3. Store the new window ID and continue the review loop from the same step.
 
@@ -61,10 +61,10 @@ Triggered when a Task Agent requests approval to open a PR.
 2. Call `open-review-pane.sh "review-<task-id>" "<worktree-path>"` — opens a new tmux window showing `git diff <base>...HEAD`. Store the returned window ID.
 3. Present the full diff to the human and ask for approval.
 4. **On approval:**
-   a. Call `close-review-pane.sh "<window-id>"`.
+   a. Call `close-pane.sh "<window-id>"`.
    b. Run the **Verification Gate** (see below) before notifying the Task Agent.
 5. **On rejection:**
-   a. Call `close-review-pane.sh "<window-id>"`.
+   a. Call `close-pane.sh "<window-id>"`.
    b. Send a structured rejection to the Task Agent containing:
       - Which files are affected.
       - What specific change is expected.
@@ -88,7 +88,7 @@ Runs after diff approval and before notifying the Task Agent to open the PR. Rea
 1. Call `open-verification-pane.sh "verify-<task-id>" "<worktree-path>" ["<startup-command>"]`. Store the returned window ID.
 2. Tell the human: "Verification window open — use the **verify-`<task-id>`** tmux window to test the build. Confirm here when ready to open the PR."
 3. Await explicit human confirmation.
-4. Call `close-verification-pane.sh "<window-id>"`.
+4. Call `close-pane.sh "<window-id>"`.
 
 **Step 3 — Notify Task Agent:**
 
@@ -109,7 +109,7 @@ Triggered when a PR reviewer requests changes after the PR is open.
 5. Once the Task Agent has implemented and pushed the approved change:
    a. Call `open-review-pane.sh "review-update-<task-id>" "<worktree-path>"`. Store the returned window ID.
    b. Present the updated diff to the human for confirmation.
-   c. Call `close-review-pane.sh "<window-id>"` after human confirms.
+   c. Call `close-pane.sh "<window-id>"` after human confirms.
 
 ## Merge Conflict Review Loop
 
@@ -120,5 +120,5 @@ Triggered when a rebase or merge queue conflict is detected.
 3. When the Task Agent reports resolution:
    a. Call `open-review-pane.sh "review-conflict-<task-id>" "<worktree-path>"`. Store the returned window ID.
    b. Present the resolved diff to the human for approval.
-   c. **On approval:** call `close-review-pane.sh "<window-id>"`, notify Task Agent to push.
+   c. **On approval:** call `close-pane.sh "<window-id>"`, notify Task Agent to push.
    d. **On rejection:** close window, send structured rejection to Task Agent (see Initial Diff Review Loop step 5).

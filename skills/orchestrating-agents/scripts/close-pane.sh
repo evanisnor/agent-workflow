@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# close-verification-pane.sh — close a tmux verification window
-# Usage: close-verification-pane.sh <window-id>
+# close-pane.sh — close a tmux window by ID
+# Usage: close-pane.sh <window-id>
 
 set -euo pipefail
 
 WINDOW_ID="${1:-}"
 
 if [[ -z "${WINDOW_ID}" ]]; then
-  echo "Usage: close-verification-pane.sh <window-id>" >&2
+  echo "Usage: close-pane.sh <window-id>" >&2
   exit 1
 fi
 
@@ -19,7 +19,7 @@ fi
 # No-op if the window no longer exists
 if tmux list-windows -F '#{window_id}' | grep -qF "${WINDOW_ID}"; then
   tmux kill-window -t "${WINDOW_ID}"
-  echo "Closed verification window: ${WINDOW_ID}"
+  echo "Closed window: ${WINDOW_ID}"
 else
-  echo "Verification window ${WINDOW_ID} already closed."
+  echo "Window ${WINDOW_ID} already closed."
 fi

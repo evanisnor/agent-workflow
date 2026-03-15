@@ -35,10 +35,6 @@ fi
 git mv "${FULL_PATH}" "${ARCHIVE_PATH}"
 git commit -m "archive: ${PLAN_FILE}" --quiet
 
-_has_remote() {
-  git remote get-url origin &>/dev/null
-}
-
 if _has_remote; then
   git push origin main --quiet
 fi

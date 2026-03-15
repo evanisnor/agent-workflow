@@ -132,6 +132,11 @@ VERIFICATION_STARTUP_COMMAND="$(_cfg '.verification.startup_command' '.defaults.
 export VERIFICATION_SKILL
 VERIFICATION_SKILL="$(_cfg '.verification.skill' '.defaults.verification_skill' '')"
 
+# Helper: check whether the plan repo has a remote named 'origin'
+_has_remote() {
+  git -C "${PLAN_REPO}" remote get-url origin &>/dev/null
+}
+
 # --- Per-epic config override ---
 # Scripts that accept a plan path (e.g. spawn-agent.sh) should call
 # apply_epic_config <plan_yaml_path> after sourcing this file to layer
