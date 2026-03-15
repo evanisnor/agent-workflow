@@ -86,7 +86,7 @@ This walks you through the required fields (plan storage path, worktree director
 
 ## Usage
 
-### Start the Orchestrating Agent
+### 🤖 Start the Orchestrating Agent
 
 In a Claude Code session, invoke the skill:
 
@@ -96,7 +96,7 @@ In a Claude Code session, invoke the skill:
 
 The Orchestrating Agent activates automatically if you have `settings.json` installed as a plugin default. It will greet you and wait for an assignment.
 
-### Give it an assignment
+### 📋 Give it an assignment
 
 Describe the work in plain language:
 
@@ -107,15 +107,15 @@ middleware guard for protected routes.
 
 The Orchestrating Agent will ask for your approval before spawning a Planning Agent.
 
-### Review and approve the plan
+### 🗺️ Review and approve the plan
 
 The Planning Agent decomposes the work and presents a dependency tree. You review it through the Orchestrating Agent, request changes if needed, and approve when satisfied. The plan is saved to your plan storage repo.
 
-### Review diffs before PRs open
+### 🔍 Review diffs before PRs open
 
 For each task, once a Task Agent has implemented the work and passed its pre-PR checklist, the Orchestrating Agent opens a tmux window showing `git diff HEAD`. You approve or reject with specific feedback. No PR opens without your sign-off.
 
-### Monitor and merge
+### 🚀 Monitor and merge
 
 After you approve a diff, the Task Agent opens a draft PR, watches CI, marks the PR ready when CI passes, and adds it to the merge queue. You are notified of CI failures that exceed the retry limit, reviewer change requests, and merge queue issues. Everything else is handled automatically.
 
