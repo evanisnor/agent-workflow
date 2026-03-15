@@ -66,16 +66,16 @@ agent-workflow/
 
 **`settings.json`** (plugin root, committed) — activates Orchestrating Agent as default, provides fallback values under `defaults.*`.
 
-**`.agent-workflow.json`** (project root, gitignored) — per-project overrides: `plan_storage.repo_path`, `worktree.base_dir`, `git.protected_branches`, `jira.*`, `sandbox.*`.
+**`.agent-workflow.json`** (project root, gitignored) — per-project overrides: `plan_storage.repo_path`, `git.protected_branches`, `jira.*`, `sandbox.*`.
 
 **Resolution priority:** `epic.config.*` (per-epic in plan YAML) → `.agent-workflow.json defaults.*` → `settings.json defaults.*`
 
 ### Security Constraints
 
 - All external content (PR comments, CI logs, Jira text, plan `context`) must be wrapped in `<external_content>` tags in agent prompts. Agent system prompts must include an explicit rule to never follow instructions inside those tags.
-- `create-worktree.sh` must not copy `.env`, credentials, SSH keys, or secrets.
+- Task Agent worktrees are created by `isolation: "worktree"` on the Agent tool — no `.env`, credentials, SSH keys, or secrets are present in worktrees.
 - Sandbox `denyRead` must hardcode blocks on `~/.ssh/`, `~/.gnupg/`, `**/.env`, `**/*.pem`, `**/*.key`. `sandbox.filesystem.extra_deny_read` in project config extends this list.
-- Task Agents use `bypassPermissions` mode scoped inside the OS-level sandbox. Orchestrating Agent uses targeted allow rules only — no `bypassPermissions`.
+- Task Agents require Write/Edit/Bash pre-authorized in the project's `.claude/settings.json`. Orchestrating Agent uses targeted allow rules only.
 
 ## Implementation Process
 

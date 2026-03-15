@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
-# open-review-pane.sh — split a tmux pane showing git diff for review
-# Usage: open-review-pane.sh <pane-name> <worktree-path> [mode]
+# open-review-pane.sh — open a new tmux window showing the branch diff for review
+# Usage: open-review-pane.sh <window-name> <worktree-path> [mode]
 #
 # mode: "split" (delta --side-by-side) or "unified" (delta default).
 #       Defaults to $DIFF_MODE from config.sh, then "split".
 #       Has no effect when delta is not installed.
 #
-# Splits a new pane in the SAME tmux window as the Orchestrating Agent.
-# Never creates a new tmux session or window.
-# Outputs the pane ID on success.
+# Opens a new named window in the current tmux session — never modifies the
+# current window layout. Each review gets the full screen.
+# Outputs the tmux window ID on success.
 
 set -euo pipefail
 
-PANE_NAME="${1:-}"
+WINDOW_NAME="${1:-}"
 WORKTREE_PATH="${2:-}"
 MODE="${3:-${DIFF_MODE:-split}}"
 
-if [[ -z "${PANE_NAME}" || -z "${WORKTREE_PATH}" ]]; then
-  echo "Usage: open-review-pane.sh <pane-name> <worktree-path> [mode]" >&2
+if [[ -z "${WINDOW_NAME}" || -z "${WORKTREE_PATH}" ]]; then
+  echo "Usage: open-review-pane.sh <window-name> <worktree-path> [mode]" >&2
   exit 1
 fi
 
@@ -28,23 +28,28 @@ fi
 
 # Must be running inside tmux
 if [[ -z "${TMUX:-}" ]]; then
-  echo "Error: not running inside a tmux session. Cannot open review pane." >&2
+  echo "Error: not running inside a tmux session. Cannot open review window." >&2
   exit 1
 fi
+
+# Detect the base branch from the remote HEAD pointer; fall back to origin/main
+BASE_BRANCH="$(git -C "${WORKTREE_PATH}" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null \
+  | sed 's@^refs/remotes/@@')" || true
+BASE_BRANCH="${BASE_BRANCH:-origin/main}"
 
 # Build diff command — use delta when available, respecting the requested mode
 if command -v delta &>/dev/null; then
   if [[ "${MODE}" == "split" ]]; then
-    DIFF_CMD="git -C \"${WORKTREE_PATH}\" diff HEAD | delta --side-by-side"
+    DIFF_CMD="git -C \"${WORKTREE_PATH}\" diff \"${BASE_BRANCH}...HEAD\" | delta --side-by-side"
   else
-    DIFF_CMD="git -C \"${WORKTREE_PATH}\" diff HEAD | delta"
+    DIFF_CMD="git -C \"${WORKTREE_PATH}\" diff \"${BASE_BRANCH}...HEAD\" | delta"
   fi
 else
-  DIFF_CMD="git -C \"${WORKTREE_PATH}\" diff HEAD"
+  DIFF_CMD="git -C \"${WORKTREE_PATH}\" diff \"${BASE_BRANCH}...HEAD\""
 fi
 
-# Split a new pane in the current window
-PANE_ID="$(tmux split-window -P -F '#{pane_id}' \
-  "${DIFF_CMD}; echo '--- end of diff ---'; read -r -p 'Press Enter to close...' _")"
+# Open a new named window in the current session
+WINDOW_ID="$(tmux new-window -P -F '#{window_id}' -n "${WINDOW_NAME}" \
+  "${DIFF_CMD}; printf '\n--- end of diff ---\n'; read -r -p 'Press Enter to close...' _")"
 
-echo "${PANE_ID}"
+echo "${WINDOW_ID}"

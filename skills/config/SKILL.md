@@ -34,17 +34,6 @@ The local path to your plan storage git repository. This repo holds plan YAML fi
 
 ---
 
-### `worktree.base_dir`
-
-| | |
-|---|---|
-| Type | `string` (path) |
-| Default | `~/.agents` |
-
-Directory where Task Agent worktrees are created. Structure: `{base_dir}/{repo-name}/{task-id}/`. Tilde expansion is applied.
-
----
-
 ### `git.protected_branches`
 
 | | |
@@ -144,23 +133,31 @@ How long (in minutes) watch scripts and liveness checks poll before timing out a
 
 ---
 
-### `defaults.task_agent_mode`
-
-| | |
-|---|---|
-| Type | `string` — `"bypassPermissions"` or `"acceptEdits"` |
-| Default | `"bypassPermissions"` |
-
-Permission mode for Task Agents. `"bypassPermissions"` lets the agent act freely within the OS sandbox; `"acceptEdits"` requires approval for every file edit.
-
----
-
 ## Setup Mode
 
-Walk the user through creating or updating `.agent-workflow.json`:
+Walk the user through creating or updating `.agent-workflow.json`, then ensure `.claude/settings.json` is configured:
 
 1. Check if `.agent-workflow.json` already exists. If so, warn and confirm before overwriting.
-2. For each required field (`plan_storage.repo_path`, `worktree.base_dir`), prompt for a value. Show the default and instruct the user to type it if they want to accept it — do not say "press Enter", as Claude Code requires non-empty input.
+2. For each required field (`plan_storage.repo_path`), prompt for a value. Show the default and instruct the user to type it if they want to accept it — do not say "press Enter", as Claude Code requires non-empty input.
 3. For optional fields, ask whether the user wants to configure them (yes/no). Skip if they decline.
 4. Write the resulting JSON to `.agent-workflow.json` in the current working directory.
 5. Confirm the file was written and show a summary of the values set.
+6. Create or update `.claude/settings.json` to pre-authorize Task Agent tools. Merge with any existing content — do not overwrite keys not related to agent-workflow. The required permissions block is:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read(**)",
+      "Write(**)",
+      "Edit(**)",
+      "Glob(**)",
+      "Grep(**)",
+      "Bash(**)",
+      "WebFetch(domain:*)"
+    ]
+  }
+}
+```
+
+Explain to the user: these permissions allow Task Agents spawned by the Orchestrating Agent to read and write files in their worktrees. Without this, Task Agents will be blocked from writing code.

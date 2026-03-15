@@ -81,9 +81,6 @@ _cfg_array() {
 export PLAN_REPO
 PLAN_REPO="$(_expand_path "$(_cfg '.plan_storage.repo_path' '.defaults.plan_storage_repo_path // empty' '~/plans')")"
 
-export WORKTREE_BASE
-WORKTREE_BASE="$(_expand_path "$(_cfg '.worktree.base_dir' '.defaults.worktree_base_dir // empty' '~/.agents')")"
-
 # PROTECTED_BRANCHES as a bash array
 _protected_raw="$(_cfg_array '.git.protected_branches' '.defaults.protected_branches' '["main","master"]')"
 export PROTECTED_BRANCHES
@@ -108,14 +105,6 @@ MAX_AGENT_RESTARTS="$(_cfg '.defaults.max_agent_restarts' '.defaults.max_agent_r
 
 export POLLING_TIMEOUT_MINUTES
 POLLING_TIMEOUT_MINUTES="$(_cfg '.defaults.polling_timeout_minutes' '.defaults.polling_timeout_minutes' '60')"
-
-export TASK_AGENT_MODE
-TASK_AGENT_MODE="$(_cfg '.defaults.task_agent_mode' '.defaults.task_agent_mode' 'bypassPermissions')"
-
-# Enforce minimum safe mode — never spawn a Task Agent without at least acceptEdits
-if [[ "${TASK_AGENT_MODE}" != "bypassPermissions" && "${TASK_AGENT_MODE}" != "acceptEdits" ]]; then
-  TASK_AGENT_MODE="acceptEdits"
-fi
 
 export DIFF_MODE
 DIFF_MODE="$(_cfg '.diff.mode' '.defaults.diff_mode' 'split')"

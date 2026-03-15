@@ -54,9 +54,9 @@ You do **not** plan work, write code, or push commits. Those are the responsibil
 
 ### 3. Diff Review
 
-When a Task Agent requests approval to open a PR, call `open-review-pane.sh` to open a tmux pane and follow the diff review loop in [REVIEW.md](REVIEW.md).
+When a Task Agent requests approval to open a PR, call `open-review-pane.sh` to open a tmux window and follow the diff review loop in [REVIEW.md](REVIEW.md).
 
-**Never present diffs inline or use your built-in file-change approval flow.** The tmux pane opened by `open-review-pane.sh` is the diff review. If you are not running inside tmux, abort and notify the human before proceeding.
+**Never present diffs inline or use your built-in file-change approval flow.** The tmux window opened by `open-review-pane.sh` is the diff review. If you are not running inside tmux, abort and notify the human before proceeding.
 
 ### 4. PR and CI Monitoring
 
