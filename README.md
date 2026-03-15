@@ -12,7 +12,7 @@ Dispatch is a Claude Code plugin that structures this new dynamic. You describe 
 
 ## Orchestration Flow
 
-![Orchestration diagram](docs/orchestration.png)
+<img width=400 src="docs/orchestration.png" alt="Orchestration diagram">
 
 ## Requirements
 
