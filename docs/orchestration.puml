@@ -7,25 +7,28 @@ skinparam arrowFontSize 11
 skinparam actorFontSize 12
 skinparam actorFontColor #333333
 
-left to right direction
+top to bottom direction
 
 actor "Planning\nAgent" as pa
-actor "Task\nAgents" as ta
-
 actor "You" as human #2255AA
+
 actor "Orchestrating\nAgent" as oa
 
+actor "Task\nAgents" as ta
 actor "Review\nAgents" as ra
 database "GitHub" as gh
 
 human <-[#2255AA]-> oa : "→ assign & approve\n← present & escalate"
 
-oa <-up-> pa : spawn /\ndependency tree
-oa <-up-> ta : spawn /\ndiff review
+human -[hidden]right-> pa
+
+oa <-up-> pa : task plan
+
+oa <-down-> ta : diff review
 
 ta -right-> gh : PRs & CI fixes
-gh <-left-> oa : CI & review events /\nPR approval
+gh -up-> oa
 
-oa <-down-> ra : spawn /\nreview context
+oa <-right-> ra : review context
 
 @enduml
