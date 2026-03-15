@@ -176,6 +176,7 @@ The Review Agent reads the PR description and diff, then returns:
 - The author's original PR description, verbatim
 - A technical analysis of the diff — what changed, risk areas, anything worth scrutinizing
 - Open questions to consider before approving
+- Output from your `code_review_skill`, if one is configured — letting a project-specific skill apply your team's standards, patterns, or conventions to the analysis
 
 When you're ready to review, tell the Orchestrating Agent:
 
@@ -183,7 +184,7 @@ When you're ready to review, tell the Orchestrating Agent:
 ready to review PR #42
 ```
 
-It presents the review context in chat and opens a tmux window showing the full diff. You review, ask questions, and when satisfied, explicitly approve:
+It presents the review context and the full diff side-by-side in a tmux window. You review, ask questions, and when satisfied, explicitly approve:
 
 ```
 approve
