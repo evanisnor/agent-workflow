@@ -1230,6 +1230,35 @@ tasks:
             use the agent's returned text as the PR body.
           - If empty: use pr-description.sh as before.
 
+  - id: 35
+    name: repo-probe-and-merge-gate
+    status: done
+    depends_on: [16]
+    description: >
+      Add scripts/probe-repo.sh and update the Task Agent PR lifecycle to adapt
+      based on what the target repo actually has configured.
+
+      scripts/probe-repo.sh:
+        Detect merge queue and CI/review requirements via gh api.
+        Export MERGE_QUEUE_ENABLED, HAS_REQUIRED_CHECKS, HAS_REQUIRED_REVIEWS.
+        Check both modern rulesets API and classic branch protection, handling
+        404s and missing features gracefully.
+
+      skills/executing-tasks/SKILL.md:
+        Add step 5 (probe repo) after opening draft PR.
+        Branch CI watching on HAS_REQUIRED_CHECKS.
+        Branch merge behaviour on HAS_REQUIRED_REVIEWS:
+          - If reviews are required: reviewer approval is sufficient human sign-off;
+            proceed autonomously to add-to-merge-queue.sh or gh pr merge.
+          - If reviews are not required: escalate to Primary Agent and wait for
+            operator confirmation before any merge action.
+        Update Authority Matrix and hard constraints to match.
+
+      Also update skills/config/SKILL.md setup mode:
+        Detect plugin installation path and add Read(<plugin-path>/**) to
+        .claude/settings.json so agents are not repeatedly prompted for reads.
+        Detect plan storage repo path and add Read(<plan-storage-path>/**) too.
+
   - id: 18
     name: executing-conflict-md
     status: done
