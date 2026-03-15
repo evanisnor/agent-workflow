@@ -2,7 +2,7 @@
 # remove-worktree.sh — remove a git worktree
 # Usage: remove-worktree.sh <worktree-path>
 #
-# Verifies the path is under WORKTREE_BASE before removing.
+# Safety check: verifies the path is a registered git worktree before removing.
 
 set -euo pipefail
 
@@ -13,17 +13,20 @@ if [[ -z "${WORKTREE_PATH}" ]]; then
   exit 1
 fi
 
-source "${CLAUDE_SKILL_DIR}/../../scripts/config.sh"
-
-# Resolve to absolute paths for comparison
 ABS_WORKTREE="$(realpath "${WORKTREE_PATH}" 2>/dev/null || echo "${WORKTREE_PATH}")"
-ABS_BASE="$(realpath "${WORKTREE_BASE}" 2>/dev/null || echo "${WORKTREE_BASE}")"
 
-# Safety check: refuse to remove paths outside WORKTREE_BASE
-if [[ "${ABS_WORKTREE}" != "${ABS_BASE}/"* ]]; then
-  echo "Error: ${WORKTREE_PATH} is not under WORKTREE_BASE (${WORKTREE_BASE}). Refusing to remove." >&2
+# Locate the main repo via the worktree's shared git dir
+GIT_COMMON_DIR="$(git -C "${ABS_WORKTREE}" rev-parse --git-common-dir 2>/dev/null)" || {
+  echo "Error: ${WORKTREE_PATH} does not appear to be a git repository." >&2
+  exit 1
+}
+MAIN_REPO="$(dirname "${GIT_COMMON_DIR}")"
+
+# Safety check: refuse to remove anything not registered as a worktree
+if ! git -C "${MAIN_REPO}" worktree list --porcelain | grep -qF "worktree ${ABS_WORKTREE}"; then
+  echo "Error: ${WORKTREE_PATH} is not a registered git worktree. Refusing to remove." >&2
   exit 1
 fi
 
-git worktree remove --force "${ABS_WORKTREE}"
+git -C "${MAIN_REPO}" worktree remove --force "${ABS_WORKTREE}"
 echo "Removed worktree: ${ABS_WORKTREE}"
