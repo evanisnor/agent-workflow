@@ -964,6 +964,46 @@ tasks:
         .claude-plugin/plugin.json:
           - Register "help" in the skills array.
 
+  - id: 30
+    name: startup-greeting
+    status: pending
+    depends_on: [9, 23]
+    description: >
+      Define a consistent startup greeting for the Orchestrating Agent so the user
+      always knows the agent is ready and what state it found on startup.
+
+      Changes required:
+
+        skills/orchestrating-agents/SKILL.md:
+          - Add a "Startup Greeting" section immediately after "Startup Reconciliation".
+          - After completing startup reconciliation, the agent must output a greeting
+            in this exact structure:
+
+              1. One-line identity statement:
+                   "Orchestrating Agent ready."
+
+              2. If a plan is loaded and has in_progress or pending tasks:
+                   Render the status table (per STATUS.md).
+                   Then: "Resuming work. Let me know if you'd like to make any changes."
+
+              3. If a plan is loaded but all tasks are done/cancelled/failed:
+                   "All tasks in the current plan are complete. Give me a new assignment
+                   or run /agent-workflow:config to review your setup."
+
+              4. If no plan is loaded:
+                   "No active plan. Here's what you can do:
+                   - **Plan** — describe what you'd like to build and I'll decompose it into tasks
+                   - **Implement** — point me at an existing plan file to start executing
+                   - **Status** — run `/agent-workflow:status` to check agent activity
+                   - **Config** — run `/agent-workflow:config` to view or update your setup
+                   - **Help** — run `/agent-workflow:help` for a full command reference"
+
+          - The greeting must never exceed these four elements. No additional prose.
+
+        README.md:
+          - Update the sentence "It will greet you and wait for an assignment." in the
+            Usage section to accurately describe the greeting behavior.
+
   - id: 22
     name: diff-mode-config
     status: done
