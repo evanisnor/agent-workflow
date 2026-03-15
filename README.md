@@ -60,17 +60,27 @@ graph TD
 
 ## Installation
 
+**1. Clone the plugin**
+
 ```sh
-# 1. Clone the plugin
 git clone https://github.com/evanisnor/agent-workflow ~/.claude/plugins/agent-workflow
+```
 
-# 2. Install dependencies (macOS)
+**2. Install dependencies (macOS)**
+
+```sh
 brew bundle --file ~/.claude/plugins/agent-workflow/Brewfile
+```
 
-# 3. Start a tmux session (diff review splits panes in the current window)
+**3. Start a tmux session** (diff review splits panes in the current window)
+
+```sh
 tmux new-session -s work
+```
 
-# 4. Start Claude with the plugin loaded
+**4. Start Claude with the plugin loaded**
+
+```sh
 claude --plugin-dir ~/.claude/plugins/agent-workflow
 ```
 
