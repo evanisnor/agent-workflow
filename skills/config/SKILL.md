@@ -153,12 +153,18 @@ Walk the user through creating or updating `.dispatch.json`, then ensure `.claud
 3. For optional fields, ask whether the user wants to configure them (yes/no). Skip if they decline.
 4. Write the resulting JSON to `.dispatch.json` in the current working directory.
 5. Confirm the file was written and show a summary of the values set.
-6. Create or update `.claude/settings.json` to pre-authorize Task Agent tools. Merge with any existing content — do not overwrite keys not related to Dispatch. The required permissions block is:
+6. Determine the Dispatch plugin installation path:
+   - Check `~/.claude/plugins/installed_plugins.json` for an entry named `"dispatch"` and read its path.
+   - If not found there, check whether `~/.claude/plugins/dispatch/` exists.
+   - If still not found, ask the user: "Where is the Dispatch plugin installed? (e.g. ~/.claude/plugins/dispatch)"
+   - Expand tildes to absolute paths.
+7. Create or update `.claude/settings.json` to pre-authorize tools. Merge with any existing content — do not overwrite keys not related to Dispatch. The required permissions block is:
 
 ```json
 {
   "permissions": {
     "allow": [
+      "Read(<plugin-path>/**)",
       "Read(**)",
       "Write(**)",
       "Edit(**)",
@@ -171,4 +177,8 @@ Walk the user through creating or updating `.dispatch.json`, then ensure `.claud
 }
 ```
 
-Explain to the user: these permissions allow Task Agents spawned by the Orchestrating Agent to read and write files in their worktrees. Without this, Task Agents will be blocked from writing code.
+Where `<plugin-path>` is the absolute path determined in step 6 (e.g. `Read(/home/user/.claude/plugins/dispatch/**)`).
+
+Explain to the user:
+- The `Read(<plugin-path>/...)` entry allows the Orchestrating Agent to read Dispatch skill files without prompting. Without this, every skill file access will trigger an approval dialog.
+- The remaining permissions allow Task Agents spawned by the Orchestrating Agent to read and write files in their worktrees. Without this, Task Agents will be blocked from writing code.
