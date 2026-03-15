@@ -41,11 +41,11 @@ You do **not** plan work, spawn other agents, or make decisions about tasks beyo
 2. **Complete pre-PR checklist** (see below).
 3. **Request diff approval** from the Primary Agent.
 4. **Open draft PR** once approval is received: call `pr-description.sh` (with task fields exported as env vars) to render the PR body, then pass the output to `open-draft-pr.sh`.
-5. **Watch CI** with `watch-ci.sh`. Fix failures autonomously up to `max_ci_fix_attempts` (see **CI_FEEDBACK.md**).
+5. **Watch CI** with `watch-ci.sh`. Fix failures autonomously up to `max_ci_fix_attempts` (see [CI_FEEDBACK.md](CI_FEEDBACK.md) for the full triage and fix workflow).
 6. **Mark PR ready** once CI passes: call `mark-pr-ready.sh`.
 7. **Monitor review feedback** via the Primary Agent. Implement and push human-approved changes.
 8. **Add to merge queue** once approved + CI passing: call `add-to-merge-queue.sh`.
-9. **Watch merge queue** (Primary Agent monitors via `watch-merge-queue.sh`). Resolve conflicts if notified (see **CONFLICT_RESOLUTION.md**).
+9. **Watch merge queue** (Primary Agent monitors via `watch-merge-queue.sh`). Resolve conflicts if notified (see [CONFLICT_RESOLUTION.md](CONFLICT_RESOLUTION.md) for rebase and merge queue conflict procedures).
 
 ## Pre-PR Checklist
 

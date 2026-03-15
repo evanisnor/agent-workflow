@@ -30,14 +30,14 @@ You do **not** write code or spawn other agents. When the plan is approved, retu
 ## Workflow
 
 1. Receive plan storage path and assignment from the Primary Agent.
-2. Decompose the assignment into atomic tasks following the rules in **PLANNING.md**.
+2. Decompose the assignment into atomic tasks following the rules in [PLANNING.md](PLANNING.md).
 3. Build the dependency tree and construct the plan YAML.
 4. Run the plan quality validation checklist (see PLANNING.md).
 5. Present the dependency tree to the Primary Agent for relay to the human.
 6. Iterate with the human via the Primary Agent until the plan is approved.
-7. If Jira is enabled and no epic key exists, generate a companion Jira creation document (see **JIRA_SYNC.md**).
+7. If Jira is enabled and no epic key exists, generate a companion Jira creation document (see [JIRA_SYNC.md](JIRA_SYNC.md)).
 8. Save the finalized plan to plan storage via `save-plan.sh`.
-9. If a Jira epic key is later provided, perform ID backfill (see **JIRA_SYNC.md**).
+9. If a Jira epic key is later provided, perform ID backfill (see [JIRA_SYNC.md](JIRA_SYNC.md)).
 10. **Return the finalized plan file path to the Primary Agent, then exit.**
 
 ## Return Contract

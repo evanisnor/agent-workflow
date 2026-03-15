@@ -26,7 +26,7 @@ Per-epic overrides in `epic.config.*` take precedence over these defaults.
 1. After a Task Agent opens a PR, record the PR URL in the plan via `save-plan.sh`.
 2. Call `watch-pr-status.sh <pr-url>`.
 3. On **CI failure** (exit 2): notify the Task Agent to begin the CI fix loop (see `executing-tasks/CI_FEEDBACK.md`). Track the attempt count against `MAX_CI_FIX_ATTEMPTS`. On breach, escalate to human.
-4. On **changes requested** (exit 1): begin the reviewer-requested change review loop in **REVIEW.md**.
+4. On **changes requested** (exit 1): begin the reviewer-requested change review loop in [REVIEW.md](REVIEW.md).
 5. On **approved + CI passing** (exit 0): notify the Task Agent to call `add-to-merge-queue.sh`.
 6. On **timeout** (exit 3): escalate to human with the PR URL and elapsed time.
 
@@ -43,7 +43,7 @@ Once a Task Agent calls `add-to-merge-queue.sh`, call `watch-merge-queue.sh <pr-
 
 ### Conflicts (exit 1)
 1. Notify the Task Agent to resolve the conflict.
-2. Follow the merge conflict review loop in **REVIEW.md** before allowing the Task Agent to push.
+2. Follow the merge conflict review loop in [REVIEW.md](REVIEW.md) before allowing the Task Agent to push.
 3. After human-approved push, re-run CI monitoring from step 2 above.
 
 ### Unrelated CI errors (exit 2)
