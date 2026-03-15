@@ -4,7 +4,7 @@
 
 Before any Jira operation, check whether Jira integration is active:
 
-- If `jira.enabled` is `false` in `.agent-workflow.json`, **skip all MCP calls** and use slug IDs exclusively.
+- If `jira.enabled` is `false` in `.dispatch.json`, **skip all MCP calls** and use slug IDs exclusively.
 - In this case, always generate the companion document (see below) so the human can create tickets manually.
 
 ## Companion Jira Creation Document

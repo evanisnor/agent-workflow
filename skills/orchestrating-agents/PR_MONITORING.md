@@ -11,7 +11,7 @@ Both scripts read `POLLING_TIMEOUT_MINUTES` from `config.sh` and emit **state-ch
 
 ## Retry and Timeout Limits
 
-All limits are read from `.agent-workflow.json` → `defaults.*`, falling back to `settings.json` defaults.
+All limits are read from `.dispatch.json` → `defaults.*`, falling back to `settings.json` defaults.
 
 | Operation | Config key | Default | On breach |
 |---|---|---|---|

@@ -15,7 +15,7 @@ _SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 _PLUGIN_ROOT="${_SCRIPT_DIR}"
 
 # Per-project config (gitignored, optional)
-_PROJECT_CONFIG="${PWD}/.agent-workflow.json"
+_PROJECT_CONFIG="${PWD}/.dispatch.json"
 
 # Plugin defaults (committed)
 _SETTINGS="${_PLUGIN_ROOT}/settings.json"

@@ -19,7 +19,7 @@ When CI fails on your PR:
 The maximum number of CI fix attempts per PR push is read from:
 
 1. `epic.config.max_ci_fix_attempts` in the plan YAML (per-epic override), or
-2. `.agent-workflow.json` → `defaults.max_ci_fix_attempts`, or
+2. `.dispatch.json` → `defaults.max_ci_fix_attempts`, or
 3. `settings.json` → `defaults.max_ci_fix_attempts` (default: **3**).
 
 Track your attempt count. On reaching the limit, **escalate to the Primary Agent** with:

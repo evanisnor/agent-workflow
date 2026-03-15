@@ -1,20 +1,20 @@
 ---
 name: config
-description: "Document the full .agent-workflow.json configuration schema and help the user configure the plugin. Invoke with /config."
+description: "Document the full .dispatch.json configuration schema and help the user configure the plugin. Invoke with /config."
 ---
 
-# agent-workflow Configuration
+# Dispatch Configuration
 
 ## Modes
 
-- **View mode** (default, or pass "show"): Print the full configuration reference, then annotate the current `.agent-workflow.json` against the schema.
-- **Setup mode** (pass "setup"): Walk through creating or updating `.agent-workflow.json` interactively.
+- **View mode** (default, or pass "show"): Print the full configuration reference, then annotate the current `.dispatch.json` against the schema.
+- **Setup mode** (pass "setup"): Walk through creating or updating `.dispatch.json` interactively.
 
 ---
 
 ## View Mode
 
-Print the schema reference below. Then check whether `.agent-workflow.json` exists in the current working directory:
+Print the schema reference below. Then check whether `.dispatch.json` exists in the current working directory:
 
 - If it exists: read it with `jq` and display each key's current value. For keys not present in the file, show the default value and mark it as `(default)`.
 - If it does not exist: note that no project config is found and all values are using plugin defaults.
@@ -146,14 +146,14 @@ How long (in minutes) watch scripts and liveness checks poll before timing out a
 
 ## Setup Mode
 
-Walk the user through creating or updating `.agent-workflow.json`, then ensure `.claude/settings.json` is configured:
+Walk the user through creating or updating `.dispatch.json`, then ensure `.claude/settings.json` is configured:
 
-1. Check if `.agent-workflow.json` already exists. If so, warn and confirm before overwriting.
+1. Check if `.dispatch.json` already exists. If so, warn and confirm before overwriting.
 2. For each required field (`plan_storage.repo_path`), prompt for a value. Show the default and instruct the user to type it if they want to accept it — do not say "press Enter", as Claude Code requires non-empty input.
 3. For optional fields, ask whether the user wants to configure them (yes/no). Skip if they decline.
-4. Write the resulting JSON to `.agent-workflow.json` in the current working directory.
+4. Write the resulting JSON to `.dispatch.json` in the current working directory.
 5. Confirm the file was written and show a summary of the values set.
-6. Create or update `.claude/settings.json` to pre-authorize Task Agent tools. Merge with any existing content — do not overwrite keys not related to agent-workflow. The required permissions block is:
+6. Create or update `.claude/settings.json` to pre-authorize Task Agent tools. Merge with any existing content — do not overwrite keys not related to Dispatch. The required permissions block is:
 
 ```json
 {

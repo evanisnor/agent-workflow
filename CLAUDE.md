@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This repository is a **Claude Code plugin** that implements a multi-agent software development workflow. It provides three Claude Skills that collaborate autonomously from initial planning through to merged pull requests.
+This repository is **Dispatch**, a Claude Code plugin that implements a multi-agent software development workflow. It provides three Claude Skills that collaborate autonomously from initial planning through to merged pull requests.
 
 The repository currently contains the design specification (`SPEC.md`) and an 18-task implementation plan (`plan.yaml`). No implementation code exists yet — this is where you begin.
 
@@ -35,13 +35,13 @@ No build system exists yet. Once implemented, this plugin consists of shell scri
 ### Directory Structure (target state)
 
 ```
-agent-workflow/
+dispatch/
 ├── .claude-plugin/
 │   └── plugin.json               # Plugin manifest
 ├── settings.json                 # Plugin defaults & Orchestrating Agent activation
-├── .agent-workflow.example.json  # Committed per-project config template
+├── .dispatch.example.json        # Committed per-project config template
 ├── scripts/                      # Shared scripts (sourced by all agents)
-│   ├── config.sh                 # Config loader — merges settings.json + .agent-workflow.json
+│   ├── config.sh                 # Config loader — merges settings.json + .dispatch.json
 │   ├── load-plan.sh              # Fetch plan YAML from plan storage repo
 │   ├── save-plan.sh              # Persist plan YAML with git-based mutex lock
 │   └── watch-merge-queue.sh      # Poll merge queue status
@@ -66,9 +66,9 @@ agent-workflow/
 
 **`settings.json`** (plugin root, committed) — activates Orchestrating Agent as default, provides fallback values under `defaults.*`.
 
-**`.agent-workflow.json`** (project root, gitignored) — per-project overrides: `plan_storage.repo_path`, `git.protected_branches`, `jira.*`, `sandbox.*`.
+**`.dispatch.json`** (project root, gitignored) — per-project overrides: `plan_storage.repo_path`, `git.protected_branches`, `jira.*`, `sandbox.*`.
 
-**Resolution priority:** `epic.config.*` (per-epic in plan YAML) → `.agent-workflow.json defaults.*` → `settings.json defaults.*`
+**Resolution priority:** `epic.config.*` (per-epic in plan YAML) → `.dispatch.json defaults.*` → `settings.json defaults.*`
 
 ### Security Constraints
 

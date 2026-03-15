@@ -1,21 +1,21 @@
 ---
 name: help
-description: "List available agent-workflow commands and usage examples. Invoke with /help."
+description: "List available Dispatch commands and usage examples. Invoke with /help."
 ---
 
 Print the following help reference exactly as written, formatted as markdown. Do not summarise, paraphrase, or add commentary.
 
 ---
 
-# agent-workflow Help
+# Dispatch Help
 
 ## Slash Commands
 
 | Command | Description |
 |---------|-------------|
-| `/orchestrating-agents` | Start or resume the Orchestrating Agent |
+| `/dispatch` | Start or resume the Orchestrating Agent |
 | `/status` | Show a status table of all active agents |
-| `/config` | Show the full config schema and help configure `.agent-workflow.json` |
+| `/config` | Show the full config schema and help configure `.dispatch.json` |
 | `/help` | Show this help reference |
 
 ## Talking to the Orchestrating Agent
