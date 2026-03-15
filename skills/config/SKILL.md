@@ -74,7 +74,7 @@ Default diff display mode in review panes. `"split"` uses `delta --side-by-side`
 | Type | `string` (path) |
 | Default | `""` (built-in template) |
 
-Path to a custom PR description template file. Leave empty to use the built-in default. Supports variables: `{task_id}`, `{task_title}`, `{task_description}`, `{epic_title}`, `{branch}`, `{plan_path}`, `{worktree}`.
+Path to a custom PR description template file. Leave empty to use the built-in default. Supports variables: `{task_id}`, `{task_title}`, `{task_description}`, `{task_context}`, `{epic_title}`, `{branch}`, `{plan_path}`, `{worktree}`.
 
 ---
 

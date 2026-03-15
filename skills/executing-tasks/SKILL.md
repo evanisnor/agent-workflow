@@ -40,7 +40,12 @@ You do **not** plan work, spawn other agents, or make decisions about tasks beyo
 1. **Implement** the task in your assigned worktree.
 2. **Complete pre-PR checklist** (see below).
 3. **Request diff approval** from the Primary Agent.
-4. **Open draft PR** once approval is received: call `pr-description.sh` (with task fields exported as env vars) to render the PR body, then pass the output to `open-draft-pr.sh`.
+4. **Open draft PR** once approval is received: export the following env vars, then call `pr-description.sh` to render the PR body and pass the output to `open-draft-pr.sh`:
+   - `TASK_ID` — task ID from the plan.
+   - `TASK_TITLE` — task title from the plan.
+   - `EPIC_TITLE` — epic title from the plan.
+   - `TASK_DESCRIPTION` — a concise bulleted list of **what** was implemented. Do not copy the plan description verbatim. Use 3–7 bullets. Format code symbols and file paths with backticks.
+   - `TASK_CONTEXT` — 1–2 sentences explaining **why** this task exists: what problem it solves or what it enables for the rest of the epic. Do not write "Part of epic X" — that is not a why.
 5. **Watch CI** with `watch-ci.sh`. Fix failures autonomously up to `max_ci_fix_attempts` (see [CI_FEEDBACK.md](CI_FEEDBACK.md) for the full triage and fix workflow).
 6. **Mark PR ready** once CI passes: call `mark-pr-ready.sh`.
 7. **Monitor review feedback** via the Primary Agent. Implement and push human-approved changes.
