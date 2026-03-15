@@ -1,6 +1,6 @@
 ---
 name: config
-description: "Document the full .agent-workflow.json configuration schema and help the user configure the plugin. Invoke with /agent-workflow:config."
+description: "Document the full .agent-workflow.json configuration schema and help the user configure the plugin. Invoke with /config."
 ---
 
 # agent-workflow Configuration

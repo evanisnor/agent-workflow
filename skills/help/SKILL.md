@@ -1,6 +1,6 @@
 ---
 name: help
-description: "List available agent-workflow commands and usage examples. Invoke with /agent-workflow:help."
+description: "List available agent-workflow commands and usage examples. Invoke with /help."
 ---
 
 # agent-workflow Help
@@ -9,10 +9,10 @@ description: "List available agent-workflow commands and usage examples. Invoke 
 
 | Command | Description |
 |---------|-------------|
-| `/agent-workflow:orchestrating-agents` | Start or resume the Orchestrating Agent |
-| `/agent-workflow:status` | Show a status table of all active agents |
-| `/agent-workflow:config` | Show the full config schema and help configure `.agent-workflow.json` |
-| `/agent-workflow:help` | Show this help reference |
+| `/orchestrating-agents` | Start or resume the Orchestrating Agent |
+| `/status` | Show a status table of all active agents |
+| `/config` | Show the full config schema and help configure `.agent-workflow.json` |
+| `/help` | Show this help reference |
 
 ## Talking to the Orchestrating Agent
 

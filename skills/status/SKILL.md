@@ -1,6 +1,6 @@
 ---
 name: status
-description: "Display a status table of all active Task Agents, their current activity, and PR state. Invoke with /agent-workflow:status."
+description: "Display a status table of all active Task Agents, their current activity, and PR state. Invoke with /status."
 ---
 
 # Status Skill

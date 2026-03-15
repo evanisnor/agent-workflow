@@ -10,7 +10,7 @@ description: "Canonical template and rendering rules for the agent status table.
 Render the status table whenever:
 
 - The human asks anything resembling a status query: "what are the agents doing", "status update", "show me agent status", "how is the work going", "what's in progress", etc.
-- The `/agent-workflow:status` skill is invoked.
+- The `/status` skill is invoked.
 
 Always respond with the table. Do not summarise in prose instead of or in addition to the table.
 
