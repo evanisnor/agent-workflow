@@ -177,13 +177,32 @@ All external content — PR comments, CI log summaries, reviewer feedback, Jira 
 - **Merge conflicts** — surfaced for guidance before any conflicting changes are pushed.
 - **Abandoning a task** — requires explicit confirmation.
 
-## Jira Integration
+## Configuration
+
+`.dispatch.json` lives in your project root (gitignored) and overrides plugin defaults for that project. Run `/config` to see all current values, or `/config setup` to create or update the file interactively.
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `plan_storage.repo_path` | `string` (path) | `~/plans` | Local path to your plan storage git repository. |
+| `git.protected_branches` | `array of strings` | `["main", "master"]` | Branches Task Agents are sandbox-denied from pushing to directly. |
+| `git.branch_prefix` | `string` | `""` | Prefix prepended to every task branch (e.g. `"feat/"`, `"users/evan/"`). Must end with `/` for directory-style prefixes. |
+| `jira.enabled` | `boolean` | `false` | Enable Jira MCP integration. |
+| `diff.mode` | `"split"` \| `"unified"` | `"split"` | Diff display mode in review panes. `"split"` uses `delta --side-by-side`; `"unified"` uses standard `delta` output. No effect if `delta` is not installed. |
+| `pr.template_path` | `string` (path) | `""` | Path to a custom PR description template. Leave empty to use the built-in template. |
+| `pr.description_skill` | `string` | `""` | Name of a delegate skill for PR description authoring. Leave empty to use the built-in template or `pr.template_path`. |
+| `sandbox.network.allowed_domains` | `array of strings` | `["github.com", "api.github.com", "registry.npmjs.org"]` | Domains Task Agents are permitted to reach over the network. |
+| `sandbox.filesystem.extra_deny_read` | `array of glob strings` | `[]` | Additional paths to block Task Agents from reading, merged with the hardcoded base deny list. |
+| `defaults.max_ci_fix_attempts` | `integer` | `3` | How many times a Task Agent may attempt to fix a CI failure before escalating. |
+| `defaults.max_agent_restarts` | `integer` | `2` | How many times the Orchestrating Agent may restart a dead Task Agent before escalating. |
+| `defaults.polling_timeout_minutes` | `integer` | `60` | How long (in minutes) watch scripts poll before timing out and escalating. |
+
+### Jira Integration
 
 Jira integration is optional and disabled by default. To enable it, set `"jira": { "enabled": true }` in your `.dispatch.json` and ensure a Jira MCP server is configured in your Claude Code environment.
 
 When enabled, the Planning Agent reads epics and child issues via the Jira MCP server (read-only) and backfills real Jira keys into the plan YAML. If Jira is disabled, the Planning Agent uses kebab-case slug IDs and generates a companion markdown document for manual ticket creation.
 
-## PR Description Templates
+### PR Description Templates
 
 By default, every Task Agent generates a PR body using the built-in template:
 
@@ -211,7 +230,9 @@ To use a custom template, point to it in `.dispatch.json`:
 }
 ```
 
-To use a delegate skill for PR description authoring:
+Available template variables: `{task_id}`, `{task_title}`, `{task_description}`, `{task_context}`, `{epic_title}`, `{branch}`, `{plan_path}`, `{worktree}`.
+
+To hand off PR description authoring entirely to another Claude skill, set `pr.description_skill` instead. The Task Agent will spawn that skill with the full task context and use whatever it returns as the PR body — useful if you have a team-specific skill that knows your PR conventions, pulls from internal docs, or formats descriptions in a particular way.
 
 ```json
 {
@@ -220,5 +241,3 @@ To use a delegate skill for PR description authoring:
   }
 }
 ```
-
-Available template variables: `{task_id}`, `{task_title}`, `{task_description}`, `{task_context}`, `{epic_title}`, `{branch}`, `{plan_path}`, `{worktree}`.
