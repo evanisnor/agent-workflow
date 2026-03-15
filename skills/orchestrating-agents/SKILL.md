@@ -119,12 +119,20 @@ The human may request mid-flight plan changes at any time. Three amendment types
 On every startup, before resuming work:
 
 1. Load all plan files from plan storage.
-2. For each task with `status: in_progress`:
+2. **Integrity check — run first, before any other reconciliation.** For each loaded plan, verify:
+   - The file is valid YAML.
+   - A `tasks` key is present and its value is a non-empty list.
+   If either condition fails: **immediately stop and escalate to the human** — output exactly:
+   > ⚠ Plan file `<path>` appears corrupted (missing or empty task list). Do not attempt to repair it automatically. Please restore the file from git history or provide a corrected version.
+
+   Do **not** inspect git history, run git commands, or attempt any further reconciliation on a corrupted plan.
+
+3. For each task with `status: in_progress`:
    a. Check whether `branch` exists: `git branch -r | grep <branch>`
    b. Check whether an open PR exists: `gh pr list --head <branch>`
    c. Check whether `agent_id` corresponds to a running agent.
-3. **Auto-correct** unambiguous mismatches — e.g., branch exists, PR open, but status was not updated: set `status: in_progress` and resume monitoring.
-4. **Escalate to human** for ambiguous state — e.g., `status: in_progress` but no branch, no PR, and no running agent: present the discrepancy and await instructions.
+4. **Auto-correct** unambiguous mismatches — e.g., branch exists, PR open, but status was not updated: set `status: in_progress` and resume monitoring.
+5. **Escalate to human** for ambiguous state — e.g., `status: in_progress` but no branch, no PR, and no running agent: present the discrepancy and await instructions.
 
 ## Startup Greeting
 
