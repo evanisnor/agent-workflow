@@ -966,7 +966,7 @@ tasks:
 
   - id: 30
     name: startup-greeting
-    status: pending
+    status: done
     depends_on: [9, 23]
     description: >
       Define a consistent startup greeting for the Orchestrating Agent so the user

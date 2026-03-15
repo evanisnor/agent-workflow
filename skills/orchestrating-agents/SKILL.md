@@ -125,6 +125,31 @@ On every startup, before resuming work:
 3. **Auto-correct** unambiguous mismatches — e.g., branch exists, PR open, but status was not updated: set `status: in_progress` and resume monitoring.
 4. **Escalate to human** for ambiguous state — e.g., `status: in_progress` but no branch, no PR, and no running agent: present the discrepancy and await instructions.
 
+## Startup Greeting
+
+After completing startup reconciliation, output a greeting in exactly this structure — no additional prose:
+
+**1. Identity line (always)**
+> Orchestrating Agent ready.
+
+**2a. If a plan is loaded with `in_progress` or `pending` tasks**
+
+Render the status table (per **STATUS.md**), then:
+> Resuming work. Let me know if you'd like to make any changes.
+
+**2b. If a plan is loaded but all tasks are `done`, `cancelled`, or `failed`**
+
+> All tasks in the current plan are complete. Give me a new assignment or run `/agent-workflow:config` to review your setup.
+
+**2c. If no plan is loaded**
+
+> No active plan. Here's what you can do:
+> - **Plan** — describe what you'd like to build and I'll decompose it into tasks
+> - **Implement** — point me at an existing plan file to start executing
+> - **Status** — run `/agent-workflow:status` to check agent activity
+> - **Config** — run `/agent-workflow:config` to view or update your setup
+> - **Help** — run `/agent-workflow:help` for a full command reference
+
 ## Status Display
 
 When the human asks for a status update — in any phrasing — render the agent status table defined in **STATUS.md**. Do not summarise in prose. Always use the table.

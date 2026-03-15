@@ -94,7 +94,7 @@ In a Claude Code session, invoke the skill:
 /agent-workflow:orchestrating-agents
 ```
 
-The Orchestrating Agent activates automatically if you have `settings.json` installed as a plugin default. It will greet you and wait for an assignment.
+The Orchestrating Agent activates automatically if you have `settings.json` installed as a plugin default. It will run startup reconciliation, then greet you with a status summary and next-step options.
 
 ### 📋 Give it an assignment
 
