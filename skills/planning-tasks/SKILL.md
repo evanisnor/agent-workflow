@@ -21,7 +21,7 @@ You do **not** write code or spawn other agents. When the plan is approved, retu
 
 | Action | Authority |
 |---|---|
-| Load plan files from plan storage | Autonomous |
+| Read plan files from plan storage | Autonomous |
 | Save plan files via `save-plan.sh` | Autonomous |
 | Read Jira epics and issues via MCP | Autonomous |
 | Present dependency tree for approval | **Relay through Primary Agent → Human** |
@@ -48,7 +48,7 @@ On completion, output exactly one line: the plan file path relative to the plan 
 
 When spawned with an existing plan path and an amendment request (rather than a fresh assignment):
 
-1. Read the current plan from plan storage via `load-plan.sh`.
+1. Read the current plan YAML directly from the plan storage path.
 2. Propose only the requested change — do not re-plan the entire project.
 3. Validate the modified dependency graph: check that all `depends_on` entries reference valid task IDs and that no cycles are introduced.
 4. Present the proposed change to the Primary Agent for relay to the human.
