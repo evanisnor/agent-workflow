@@ -20,7 +20,6 @@ graph TD
         uc_approve_diff(["Approve diff"])
         uc_approve_review(["Approve incoming PR"])
         uc_status(["Check agent status"])
-        uc_help(["Get help"])
     end
 
     subgraph oa ["🤖 Orchestrating Agent"]
@@ -31,7 +30,6 @@ graph TD
         uc_present_review(["Present review context + diff"])
         uc_monitor(["Monitor PRs and CI"])
         uc_show_status(["Report agent status"])
-        uc_show_help(["Show help reference"])
     end
 
     subgraph pa ["🤖 Planning Agent"]
@@ -47,19 +45,22 @@ graph TD
         uc_analyze(["Analyze incoming PR"])
     end
 
+    github[("GitHub")]
+
     uc_assign --> uc_spawn_pa
     uc_spawn_pa --> uc_plan
     uc_approve_plan --> uc_spawn_ta
     uc_spawn_ta --> uc_implement
     uc_implement --> uc_present
     uc_approve_diff --> uc_pr
-    uc_pr --> uc_monitor
-    uc_monitor --> uc_spawn_ra
+    uc_pr --> github
+    github --> uc_monitor
+    github --> uc_spawn_ra
     uc_spawn_ra --> uc_analyze
     uc_analyze --> uc_present_review
-    uc_approve_review --> uc_present_review
+    uc_present_review --> uc_approve_review
+    uc_approve_review --> github
     uc_status --> uc_show_status
-    uc_help --> uc_show_help
 ```
 
 ## Requirements
