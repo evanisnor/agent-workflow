@@ -1,24 +1,24 @@
 @startuml orchestration
-!theme plain
+!theme materia
 skinparam dpi 200
 skinparam backgroundColor #FFFFFF
 skinparam actorStyle awesome
-skinparam arrowColor #555555
 skinparam arrowFontSize 11
 skinparam actorFontSize 12
+skinparam actorFontColor #333333
 
 left to right direction
 
 actor "Planning\nAgent" as pa
 actor "Task\nAgents" as ta
 
-actor "You" as human
+actor "You" as human #2255AA
 actor "Orchestrating\nAgent" as oa
 
 actor "Review\nAgents" as ra
 database "GitHub" as gh
 
-human <-right-> oa : assign & approve /\npresent & escalate
+human <-[#2255AA]-> oa : "→ assign & approve\n← present & escalate"
 
 oa <-up-> pa : spawn /\ndependency tree
 oa <-up-> ta : spawn /\ndiff review
