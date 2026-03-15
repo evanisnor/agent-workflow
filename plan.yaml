@@ -1108,6 +1108,28 @@ tasks:
       Also update README.md Installation section to mention that users on macOS can run
       `brew bundle` from the repo root to install all dependencies at once.
 
+  - id: 33
+    name: load-plan-archive-plan-scripts
+    status: done
+    depends_on: [3]
+    description: >
+      Implement load-plan.sh and archive-plan.sh, and add a Plan Update Rule to the
+      Orchestrating Agent's SKILL.md to prevent it from constructing plan YAML from
+      memory (which caused task lists to be wiped on plan completion).
+
+      scripts/load-plan.sh:
+        Output plan YAML from plan storage to stdout.
+        Usage: load-plan.sh <plan-file-path>
+
+      scripts/archive-plan.sh:
+        Move a plan YAML to the archived/ subdirectory in plan storage via git mv.
+        Usage: archive-plan.sh <plan-file-path>
+
+      skills/orchestrating-agents/SKILL.md:
+        Add "Plan Update Rule" section: always load-plan.sh | yq patch | save-plan.sh.
+        Never construct YAML from memory. Update hard constraint to match.
+        Update Completion section to use archive-plan.sh instead of save-plan.sh for archival.
+
   - id: 31
     name: branch-prefix-support
     status: pending
