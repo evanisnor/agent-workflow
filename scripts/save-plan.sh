@@ -20,25 +20,42 @@ LOCK_FILE="${PLAN_REPO}/plans/.lock"
 # Read updated YAML content from stdin before acquiring lock
 UPDATED_YAML="$(cat)"
 
+# Initialise plan repo as a git repo if it is not already one
+if [[ ! -d "${PLAN_REPO}/.git" ]]; then
+  git -C "${PLAN_REPO}" init --quiet
+fi
+
+# Detect whether a remote named 'origin' is configured
+_has_remote() {
+  git -C "${PLAN_REPO}" remote get-url origin &>/dev/null
+}
+
 _acquire_lock() {
   local attempt="$1"
   local delay="$2"
 
   cd "${PLAN_REPO}"
-  git pull --rebase --quiet origin main 2>/dev/null || true
+  if _has_remote; then
+    git pull --rebase --quiet origin main 2>/dev/null || true
+  fi
 
   # Attempt to create lock file and commit it
   echo "locked by save-plan.sh pid=$$ at $(date -u +%Y-%m-%dT%H:%M:%SZ)" > "${LOCK_FILE}"
   git add "${LOCK_FILE}"
 
   if git commit -m "lock: acquire for plan update (attempt ${attempt})" --quiet 2>/dev/null; then
-    if git push origin main --quiet 2>/dev/null; then
+    if _has_remote; then
+      if git push origin main --quiet 2>/dev/null; then
+        return 0
+      fi
+      # Push failed — someone else committed first; clean up local commit
+      git reset --soft HEAD~1 --quiet
+      git restore --staged "${LOCK_FILE}" 2>/dev/null || true
+      rm -f "${LOCK_FILE}"
+    else
+      # No remote — local commit is sufficient as the lock
       return 0
     fi
-    # Push failed — someone else committed first; clean up local commit
-    git reset --soft HEAD~1 --quiet
-    git restore --staged "${LOCK_FILE}" 2>/dev/null || true
-    rm -f "${LOCK_FILE}"
   else
     # Commit failed — clean up staged file
     git restore --staged "${LOCK_FILE}" 2>/dev/null || true
@@ -55,7 +72,9 @@ _release_lock() {
   if [[ -f "${LOCK_FILE}" ]]; then
     git rm -f "${LOCK_FILE}" --quiet
     git commit -m "lock: release after plan update" --quiet
-    git push origin main --quiet
+    if _has_remote; then
+      git push origin main --quiet
+    fi
   fi
 }
 
@@ -85,17 +104,21 @@ if [[ "${LOCKED}" != "true" ]]; then
   exit 1
 fi
 
-# Lock acquired — pull latest, write, commit, push, then release
+# Lock acquired — pull latest (if remote), write, commit, push (if remote), then release
 trap '_release_lock' EXIT
 
 cd "${PLAN_REPO}"
-git pull --rebase --quiet origin main
+if _has_remote; then
+  git pull --rebase --quiet origin main
+fi
 
 mkdir -p "$(dirname "${FULL_PATH}")"
 printf '%s\n' "${UPDATED_YAML}" > "${FULL_PATH}"
 
 git add "${FULL_PATH}"
 git commit -m "plan: update ${PLAN_FILE}" --quiet
-git push origin main --quiet
+if _has_remote; then
+  git push origin main --quiet
+fi
 
 echo "Plan saved: ${FULL_PATH}"

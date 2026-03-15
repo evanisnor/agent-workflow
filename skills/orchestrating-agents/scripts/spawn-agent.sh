@@ -21,8 +21,11 @@ source "${CLAUDE_SKILL_DIR}/../../scripts/config.sh"
 # Apply per-epic config overrides
 apply_epic_config "${PLAN_PATH}"
 
-# Extract task details from plan YAML
+# Extract task details from plan YAML — support both .epic.tasks[] and root .tasks[]
 TASK_YAML="$(yq e ".epic.tasks[] | select(.id == \"${TASK_ID}\")" "${PLAN_PATH}" 2>/dev/null)"
+if [[ -z "${TASK_YAML}" ]]; then
+  TASK_YAML="$(yq e ".tasks[] | select(.id == \"${TASK_ID}\")" "${PLAN_PATH}" 2>/dev/null)"
+fi
 if [[ -z "${TASK_YAML}" ]]; then
   echo "Error: task '${TASK_ID}' not found in ${PLAN_PATH}" >&2
   exit 1

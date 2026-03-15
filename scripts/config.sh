@@ -138,15 +138,16 @@ apply_epic_config() {
     return 0
   fi
 
+  # Support both .epic.config.* (Jira-backed plans) and .config.* (no-epic plans)
   local epic_max_ci
-  epic_max_ci="$(yq e '.epic.config.max_ci_fix_attempts // ""' "${plan_path}" 2>/dev/null || true)"
+  epic_max_ci="$(yq e '.epic.config.max_ci_fix_attempts // .config.max_ci_fix_attempts // ""' "${plan_path}" 2>/dev/null || true)"
   [[ -n "${epic_max_ci}" ]] && export MAX_CI_FIX_ATTEMPTS="${epic_max_ci}"
 
   local epic_max_restarts
-  epic_max_restarts="$(yq e '.epic.config.max_agent_restarts // ""' "${plan_path}" 2>/dev/null || true)"
+  epic_max_restarts="$(yq e '.epic.config.max_agent_restarts // .config.max_agent_restarts // ""' "${plan_path}" 2>/dev/null || true)"
   [[ -n "${epic_max_restarts}" ]] && export MAX_AGENT_RESTARTS="${epic_max_restarts}"
 
   local epic_timeout
-  epic_timeout="$(yq e '.epic.config.polling_timeout_minutes // ""' "${plan_path}" 2>/dev/null || true)"
+  epic_timeout="$(yq e '.epic.config.polling_timeout_minutes // .config.polling_timeout_minutes // ""' "${plan_path}" 2>/dev/null || true)"
   [[ -n "${epic_timeout}" ]] && export POLLING_TIMEOUT_MINUTES="${epic_timeout}"
 }
