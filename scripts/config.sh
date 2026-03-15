@@ -120,6 +120,15 @@ PR_TEMPLATE_PATH="$(_expand_path "$(_cfg '.pr.template_path' '.defaults.pr_templ
 export PR_DESCRIPTION_SKILL
 PR_DESCRIPTION_SKILL="$(_cfg '.pr.description_skill' '.defaults.pr_description_skill' '')"
 
+export VERIFICATION_MANUAL_GATE
+VERIFICATION_MANUAL_GATE="$(_cfg '.verification.manual_gate' '.defaults.verification_manual_gate' 'false')"
+
+export VERIFICATION_STARTUP_COMMAND
+VERIFICATION_STARTUP_COMMAND="$(_cfg '.verification.startup_command' '.defaults.verification_startup_command' '')"
+
+export VERIFICATION_SKILL
+VERIFICATION_SKILL="$(_cfg '.verification.skill' '.defaults.verification_skill' '')"
+
 # --- Per-epic config override ---
 # Scripts that accept a plan path (e.g. spawn-agent.sh) should call
 # apply_epic_config <plan_yaml_path> after sourcing this file to layer

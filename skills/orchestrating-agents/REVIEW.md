@@ -28,7 +28,7 @@ Triggered when a Task Agent requests approval to open a PR.
 3. Present the full diff to the human and ask for approval.
 4. **On approval:**
    a. Call `close-review-pane.sh "<window-id>"`.
-   b. Notify the Task Agent: "diff approved — proceed to open draft PR".
+   b. Run the **Verification Gate** (see below) before notifying the Task Agent.
 5. **On rejection:**
    a. Call `close-review-pane.sh "<window-id>"`.
    b. Send a structured rejection to the Task Agent containing:
@@ -36,6 +36,31 @@ Triggered when a Task Agent requests approval to open a PR.
       - What specific change is expected.
       - Acceptance criteria the change must satisfy.
 6. **Repeat** from step 1 when the Task Agent notifies that it has addressed the feedback.
+
+## Verification Gate
+
+Runs after diff approval and before notifying the Task Agent to open the PR. Read `verification.skill` and `verification.manual_gate` from config (via `config.sh`).
+
+**Step 1 — Delegate skill (if `VERIFICATION_SKILL` is set):**
+
+1. Spawn the named skill via the Agent tool, passing these values in the prompt:
+   - `WORKTREE=<worktree-path>`
+   - `BRANCH=<branch>`
+   - `TASK_ID=<task-id>`
+2. Present the skill's output to the human.
+
+**Step 2 — Manual gate (if `VERIFICATION_MANUAL_GATE=true`):**
+
+1. Call `open-verification-pane.sh "verify-<task-id>" "<worktree-path>" ["<startup-command>"]`. Store the returned window ID.
+2. Tell the human: "Verification window open — use the **verify-`<task-id>`** tmux window to test the build. Confirm here when ready to open the PR."
+3. Await explicit human confirmation.
+4. Call `close-verification-pane.sh "<window-id>"`.
+
+**Step 3 — Notify Task Agent:**
+
+After both steps complete (or if neither is configured, immediately after diff approval), notify the Task Agent: "diff approved — proceed to open draft PR".
+
+If both `VERIFICATION_SKILL` and `VERIFICATION_MANUAL_GATE` are set, the skill runs first, then the manual gate opens.
 
 ## Reviewer-Requested Change Review Loop
 
