@@ -152,9 +152,7 @@ Render the status table (per **STATUS.md**), then:
 
 ## Status Display
 
-When the human asks for a status update — in any phrasing — render the agent status table defined in **STATUS.md**. Do not summarise in prose. Always use the table.
-
-The same table is rendered when the `/status` skill is invoked.
+When the human asks for a status update — in any phrasing — render the agent status table. The table template and rendering rules are defined in STATUS.md (loaded alongside this skill). Do not summarise in prose. Always use the table.
 
 ## Hard Constraints
 
