@@ -89,6 +89,39 @@ Path to a custom PR description template file. Leave empty to use the built-in d
 
 ---
 
+### `verification.manual_gate`
+
+| | |
+|---|---|
+| Type | `boolean` |
+| Default | `false` |
+
+When `true`, the Orchestrating Agent opens a tmux window pointed at the task's worktree after diff approval, and waits for explicit human confirmation before the PR opens. Gives you a shell in the exact state the Task Agent left — use it for runtime testing, smoke tests, or anything that requires the app to actually run.
+
+---
+
+### `verification.startup_command`
+
+| | |
+|---|---|
+| Type | `string` |
+| Default | `""` |
+
+Shell command to run automatically in the verification tmux window when `verification.manual_gate` is `true`. Useful for booting a dev server (e.g. `"npm run dev"`, `"./gradlew bootRun"`). Leave empty to open an idle shell.
+
+---
+
+### `verification.skill`
+
+| | |
+|---|---|
+| Type | `string` |
+| Default | `""` |
+
+Name of a delegate skill to spawn for automated pre-PR verification. The skill receives `WORKTREE`, `BRANCH`, and `TASK_ID` as context. Its output is presented to the human before they confirm. Useful for running integration test suites, deploying to a staging environment, or any project-specific verification logic. Independent of `verification.manual_gate` — both can be set and will run in sequence (skill first, then manual gate).
+
+---
+
 ### `sandbox.network.allowed_domains`
 
 | | |
@@ -150,7 +183,11 @@ Walk the user through creating or updating `.dispatch.json`, then ensure `.claud
 
 1. Check if `.dispatch.json` already exists. If so, warn and confirm before overwriting.
 2. For each required field (`plan_storage.repo_path`), prompt for a value. Show the default and instruct the user to type it if they want to accept it — do not say "press Enter", as Claude Code requires non-empty input.
-3. For optional fields, ask whether the user wants to configure them (yes/no). Skip if they decline.
+3. For optional fields, ask whether the user wants to configure them (yes/no). Skip if they decline. Optional fields to prompt for (in addition to those above):
+   - `verification.manual_gate` — "Do you want to enable a manual verification gate after diff review? (yes/no)"
+     - If yes, also prompt for `verification.startup_command` — "Enter a startup command to run in the verification window, or leave blank for an idle shell:"
+   - `verification.skill` — "Do you want to configure a delegate skill for automated pre-PR verification? (yes/no)"
+     - If yes, prompt for the skill name.
 4. Write the resulting JSON to `.dispatch.json` in the current working directory.
 5. Confirm the file was written and show a summary of the values set.
 6. Determine the Dispatch plugin installation path:

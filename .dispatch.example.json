@@ -29,6 +29,12 @@
     "description_skill": ""
   },
 
+  "verification": {
+    "manual_gate": false,
+    "startup_command": "",
+    "skill": ""
+  },
+
   "defaults": {
     "max_ci_fix_attempts": 3,
     "max_agent_restarts": 2,
