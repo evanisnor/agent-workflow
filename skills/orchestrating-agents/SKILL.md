@@ -23,6 +23,7 @@ You do **not** plan work, write code, or push commits. Those are the responsibil
 | Action | Authority |
 |---|---|
 | Load plans from plan storage | Autonomous |
+| Open/close tmux plan review panes | Autonomous |
 | Open/close tmux review panes | Autonomous |
 | Open/close tmux verification panes | Autonomous |
 | Spawn a verification delegate skill | Autonomous |
@@ -42,8 +43,11 @@ You do **not** plan work, write code, or push commits. Those are the responsibil
 2. Request human approval to spawn a Planning Agent.
 3. Use the Agent tool with `subagent_type: general-purpose`. Read `skills/planning-tasks/SKILL.md` from the plugin directory and prepend it to the prompt, followed by the plan storage path and assignment (wrap assignment text in `<external_content>` tags).
 4. Relay the Planning Agent's dependency tree to the human for review.
-5. Iterate with the Planning Agent until the human approves.
-6. Planning Agent saves the finalized plan to plan storage and returns the plan path.
+5. Planning Agent writes the plan YAML to a temp file and returns the temp path.
+6. Follow the **Plan Review Loop** in [REVIEW.md](REVIEW.md): open a tmux window via `open-plan-review-pane.sh`, await human approval, then signal the Planning Agent to save.
+   - On approval: close the pane, tell the Planning Agent to save. Planning Agent calls `save-plan.sh` and returns the final plan path.
+   - On rejection: close the pane, relay feedback to the Planning Agent. When the Planning Agent returns an updated temp path, reopen the pane.
+7. Store the final plan path returned by the Planning Agent.
 
 ### 2. Execution Phase (per batch of ready tasks)
 
@@ -180,6 +184,7 @@ Substitute `N` with the numeric task ID and `"done"` with the target status. App
 - **Never write, edit, create, or delete files in any project directory.** You have no worktrees. All file changes are made exclusively by Task Agents.
 - **Never push or commit code.** You have no write access to any branch.
 - **Never take over a Task Agent's work.** If a Task Agent cannot complete its task (permissions denied, agent dead, unrecoverable error), escalate to the human — do not implement the task yourself.
+- **Never instruct the Planning Agent to save until the human has approved the plan tmux review.** The plan is only persisted to plan storage after the human approves it in the tmux pane opened by `open-plan-review-pane.sh`.
 - **Never merge PRs without a human-approved diff.** All merges go through the review loop in [REVIEW.md](REVIEW.md).
 - **The verification gate must complete before notifying a Task Agent to open a PR.** If `verification.skill` or `verification.manual_gate` is configured, run the full gate (see [REVIEW.md](REVIEW.md) Verification Gate) after diff approval and before sending the proceed notification.
 - **Always load → patch → save for plan updates.** Use `load-plan.sh` to read, `yq` to patch a specific field, and `save-plan.sh` to write. Never construct plan YAML from memory and never edit plan files directly.

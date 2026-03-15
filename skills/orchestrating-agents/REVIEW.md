@@ -1,6 +1,40 @@
 # Diff Review Approval Loop
 
-This document defines the procedures for presenting diffs to the human and relaying decisions to Task Agents.
+This document defines the procedures for presenting plans and diffs to the human and relaying decisions to Planning Agents and Task Agents.
+
+## Plan Review Loop
+
+Triggered when the Planning Agent has written the plan YAML to a temp file and returned the temp path.
+
+### New Plan
+
+1. **Receive temp path** from the Planning Agent (e.g. `/tmp/dispatch-plan-<slug>.yaml`).
+2. Call `open-plan-review-pane.sh "review-plan-<slug>" "<temp-path>"` — opens a new tmux window showing the full plan YAML. Store the returned window ID.
+3. Tell the human: "Plan draft ready — review in the **review-plan-`<slug>`** tmux window. Approve or share feedback here."
+4. **On approval:**
+   a. Call `close-review-pane.sh "<window-id>"`.
+   b. Signal the Planning Agent to save: "Plan approved — please save to plan storage and return the final path."
+   c. Receive the final plan path and proceed to Task Agent spawning.
+5. **On rejection:**
+   a. Call `close-review-pane.sh "<window-id>"`.
+   b. Relay the feedback to the Planning Agent.
+   c. When the Planning Agent returns an updated temp path, reopen from step 2.
+
+### Amendment
+
+Triggered when the Planning Agent proposes a mid-flight amendment (add task, split task, cancel task).
+
+1. **Receive temp path and original plan path** from the Planning Agent.
+2. Call `open-plan-review-pane.sh "review-amendment-<slug>" "<temp-path>" "<original-plan-path>"` — opens a tmux window showing `git diff --no-index` between the original and the proposed amendment. Store the returned window ID.
+3. Tell the human: "Proposed amendment ready — review in the **review-amendment-`<slug>`** tmux window. Approve or share feedback here."
+4. **On approval:**
+   a. Call `close-review-pane.sh "<window-id>"`.
+   b. Signal the Planning Agent to save: "Amendment approved — please save and return the final path."
+5. **On rejection:**
+   a. Call `close-review-pane.sh "<window-id>"`.
+   b. Relay the feedback. When the Planning Agent returns an updated temp path, reopen from step 2.
+
+The diff-mode toggle (`split` / `unified`) applies to both loops — see **Diff Mode Toggle** below.
 
 ## Tmux Targeting Rules
 

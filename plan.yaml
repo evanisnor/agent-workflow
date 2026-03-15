@@ -1600,7 +1600,7 @@ tasks:
       automated verification.
   - id: 40
     name: plan-review-pane-script
-    status: in_progress
+    status: done
     depends_on: []
     description: >
       Add open-plan-review-pane.sh to skills/orchestrating-agents/scripts/.
@@ -1620,7 +1620,7 @@ tasks:
       Closing reuses the existing close-review-pane.sh.
   - id: 41
     name: plan-review-flow
-    status: pending
+    status: done
     depends_on: [40]
     description: >
       Update planning workflow so the plan is reviewed in tmux before being saved.
