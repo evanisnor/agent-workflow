@@ -262,3 +262,21 @@ Explain to the user:
 - The `Read(<plugin-path>/...)` entry allows the Orchestrating Agent to read Dispatch skill files without prompting. Without this, every skill file access will trigger an approval dialog.
 - The `Read(<plan-storage-path>/...)` entry allows agents to read plan YAML files from the plan storage repo without prompting.
 - The remaining permissions allow Task Agents spawned by the Orchestrating Agent to read and write files in their worktrees. Without this, Task Agents will be blocked from writing code.
+
+9. Check and offer to update `~/.claude/settings.json` for global permissions. Background Task Agents (`run_in_background: true`, `isolation: "worktree"`) cannot prompt for permissions — they rely on pre-approved allow rules. Because the worktree directory lives outside the project root, Claude Code may not resolve the project-level `.claude/settings.json` and falls back to `~/.claude/settings.json`. If the global file lacks the required permissions, background agents silently fail.
+
+   a. Read `~/.claude/settings.json`. If it does not exist, note that it will be created.
+
+   b. Check if `permissions.allow` already includes all of the following entries: `Read`, `Write(**)`, `Edit(**)`, `Glob`, `Grep`, `Bash(**)`, `WebFetch(domain:*)`.
+
+   c. **Conflict check**: Scan `permissions.deny` for entries that would override the required allow rules. Deny rules take precedence in Claude Code, so a deny entry like `Bash(git *)` would block agents even with `Bash(**)` in allow. Specifically check for deny patterns that match commands agents need: `git`, `gh pr create`, `gh pr edit`, `gh pr ready`, `gh pr merge --auto`, `yq`, `tmux`, `cd`, `cat`, `mkdir`. If conflicts are found, list them and explain the impact — e.g. "Your global settings deny `Bash(git *)`, which would block Task Agents from committing and pushing code." Ask the user if they want to remove or narrow the conflicting deny entries before proceeding.
+
+   d. If all required allow entries are present AND no deny conflicts exist → tell the user "Global settings already include the required permissions" → skip to step 9h.
+
+   e. If any allow entries are missing → explain why global settings matter: background agents run in worktrees outside the project root, Claude Code may not resolve the project-level settings file from those directories, and without global permissions the agents will silently fail when they cannot prompt.
+
+   f. Show the specific missing entries and ask the user: "Should I add these to your global settings? (yes/no)"
+
+   g. If yes → merge the missing entries into `permissions.allow`, preserving ALL existing keys in the file (env, hooks, statusLine, mcpServers, projects, etc.). Never overwrite — only append missing entries to the `permissions.allow` array.
+
+   h. **Optional deny rules for destructive GitHub operations**: Check if `permissions.deny` already includes entries for `Bash(gh pr merge *)` (without `--auto`). If not present, suggest adding a deny rule to prevent agents from bypassing the merge queue. Example: `"Bash(gh pr merge [!-]*)"`. Explain this is optional and skip without warning if the user declines.

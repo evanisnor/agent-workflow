@@ -5065,3 +5065,16 @@ tasks:
     description: >
       Replace blocking-loop polling scripts (watch-review-requests.sh, watch-pr-status.sh, watch-merge-queue.sh) with single-shot check scripts (check-review-requests.sh, check-pr-status.sh, check-merge-queue.sh) and use CronCreate for periodic invocation. Update all skill documentation to reference the new scripts and the CronCreate-based activity poll. watch-ci.sh (used by Task Agents) is out of scope and remains unchanged.
 
+  - id: 97
+    name: global-settings-permissions-setup
+    status: done
+    depends_on: []
+    description: >
+      Add global ~/.claude/settings.json support to /config setup and document
+      the two-layer permissions system. The config skill currently only creates
+      project-level .claude/settings.json, but background Task Agents in worktrees
+      may not resolve it and fall back to global settings. Add step 9 to
+      skills/config/SKILL.md to check and merge permissions into
+      ~/.claude/settings.json. Add a Setup subsection to README.md explaining the
+      two-layer system with example JSON for both files.
+

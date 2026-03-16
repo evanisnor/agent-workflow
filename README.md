@@ -184,6 +184,59 @@ The Review Agent spawns a sub-agent with the PR URL, title, author, base and hea
 
 ## Permissions and Security
 
+### Setup
+
+Dispatch uses a two-layer settings system to authorize agent tool usage:
+
+| Layer | File | Covers |
+|---|---|---|
+| **Project** | `.claude/settings.json` | Main conversation, foreground agents spawned within the project root |
+| **Global** | `~/.claude/settings.json` | Background agents in worktrees, any session where the project-level file is not resolved |
+
+Background Task Agents (`run_in_background: true`, `isolation: "worktree"`) cannot prompt for permissions — they rely entirely on pre-approved allow rules. Because the worktree directory lives outside the project root, Claude Code may not resolve the project-level `.claude/settings.json` and falls back to the global file. If the global file lacks the required permissions, background agents silently fail.
+
+**Project-level** `.claude/settings.json` — scoped to this project, includes paths to the plugin and plan storage repo:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read(/path/to/dispatch/plugin/**)",
+      "Read(/path/to/plans/**)",
+      "Read(**)",
+      "Write(**)",
+      "Edit(**)",
+      "Glob(**)",
+      "Grep(**)",
+      "Bash(**)",
+      "WebFetch(domain:*)"
+    ]
+  }
+}
+```
+
+**Global** `~/.claude/settings.json` — ensures background agents in worktrees have the baseline permissions they need:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write(**)",
+      "Edit(**)",
+      "Glob",
+      "Grep",
+      "Bash(**)",
+      "WebFetch(domain:*)"
+    ]
+  }
+}
+```
+
+> **Note:** Deny rules override allow rules. An entry like `Bash(git *)` in `permissions.deny` will block agents from committing and pushing code even with `Bash(**)` in allow. Review your deny rules to ensure they don't conflict with agent operations.
+
+Running `/config setup` handles both files automatically — it creates the project-level settings, then checks and offers to update the global settings, including conflict detection for deny rules. Existing settings (env, hooks, MCP servers, etc.) are preserved; only missing permission entries are appended.
+
 ### What the agents can and cannot do
 
 - The Orchestrating Agent uses targeted permission rules and does not run in `bypassPermissions` mode. It cannot push code or merge PRs.
