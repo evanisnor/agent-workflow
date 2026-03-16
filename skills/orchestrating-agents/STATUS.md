@@ -1,57 +1,48 @@
 ---
 name: status
-description: "Canonical template and rendering rules for the agent status table."
+description: "Canonical template and rendering rules for the worktree-centric status display."
 ---
 
 # Agent Status Display
 
 ## Trigger Conditions
 
-Render the status table whenever:
+Render the status display whenever:
 
 - The human asks anything resembling a status query: "what are the agents doing", "status update", "show me agent status", "how is the work going", "what's in progress", etc.
 - The `/status` skill is invoked.
 
-Always respond with the table. Do not summarise in prose instead of or in addition to the table.
+Always respond with the tables. Do not summarise in prose instead of or in addition to the tables.
 
-## Status Table Template
+## Worktrees Table
 
 ```
-| Task | Title | Status | Activity | PR | Branch | Stack |
-|------|-------|--------|----------|----|--------|-------|
-| {id} | {title} | {status} | {activity} | {pr} | {branch} | {stack} |
+## Worktrees
+
+| Branch | Task | Agent | Activity | PR |
+|--------|------|-------|----------|----|
+| `{branch}` | {id}: {title} | {agent} | {activity} | {pr} |
 ```
 
 **Columns:**
 
 | Column | Source | Notes |
 |--------|--------|-------|
-| Task | `task.id` from plan YAML | |
-| Title | `task.title` from plan YAML | Truncate to 30 chars if needed |
-| Status | `task.status` from plan YAML | See values below |
-| Activity | Derived from live state | See values below |
-| PR | `task.pr_url` — render as `#N` linked if available, `—` if none | |
-| Branch | `task.branch` — render as code, `—` if not yet created | |
-| Stack | Derived from `stacked` and `base_branch` fields | See rendering rules below |
+| Branch | `task.branch` | Rendered as inline code. This is the worktree's identity. If `task.stacked: true`, append ` (on {parent_branch})`. If the task has stacked dependents, append ` (← T-{child_id})` instead (comma-separated if multiple). |
+| Task | `task.id` + `task.title` | Format: `T-{id}: {title}`. Truncate title to 25 chars if needed. |
+| Agent | Derived from `TaskGet(agent_id)` + activity classification | See Agent Values below. |
+| Activity | Derived from live state | See Activity Values below. |
+| PR | `task.pr_url` — render as `#N` linked if available | `—` if none. |
 
-**Stack column rendering rules:**
+## Agent Values
 
-- If `stacked: true`: render as `on T-<parent-id>` (find parent by matching this task's `base_branch` against other tasks' `branch` fields).
-- If the task has one or more active stacked dependents (other tasks where `base_branch` matches this task's `branch`): render as `← T-<child-id>` (comma-separated if multiple).
-- Otherwise: `—`
+The Agent column shows the agent's relationship to the worktree:
 
-## Status Values
-
-Drawn directly from `task.status` in the plan YAML:
-
-| Value | Meaning |
-|-------|---------|
-| `pending` | Not yet started |
-| `in_progress` | A Task Agent is actively working on this |
-| `done` | Merged |
-| `blocked` | Cannot proceed — dependency failed or conflict unresolved |
-| `failed` | Task Agent hit an unrecoverable error |
-| `cancelled` | Abandoned by human instruction |
+| Value | When to use |
+|-------|-------------|
+| `active` | `TaskGet(agent_id)` returns `running` and Activity is an active-work state: `implementing`, `pre-PR checklist`, `awaiting diff review`, `fixing CI (N/M)`, `stacked — implementing` |
+| `monitoring` | `TaskGet(agent_id)` returns `running` and Activity is a passive-wait state: `CI running`, `awaiting review`, `changes requested`, `in merge queue`, `stacking offered` |
+| `stopped` | `TaskGet(agent_id)` returns `failed` or `stopped` |
 
 ## Activity Values
 
@@ -59,24 +50,52 @@ Derived by the Orchestrating Agent from plan state and live PR/CI context. Use t
 
 | Activity | When to use |
 |----------|-------------|
-| `waiting to start` | `pending`, all dependencies met — ready to spawn |
-| `implementing` | `in_progress`, no PR open yet |
-| `pre-PR checklist` | `in_progress`, Task Agent has signalled checklist underway |
-| `awaiting diff review` | `in_progress`, Task Agent has requested diff approval |
-| `CI running` | PR open, CI checks in progress |
-| `fixing CI (attempt N/M)` | Task Agent is applying a CI fix; N = current attempt, M = max |
-| `awaiting review` | PR marked ready, no review decision yet |
-| `reviewer requested changes` | PR reviewer has requested changes, awaiting human approval |
-| `in merge queue` | PR approved and added to merge queue |
-| `merged` | PR merged successfully |
-| `blocked on <task-id>` | Waiting for a dependency that is not yet done |
-| `failed — escalation required` | CI fix limit exceeded or unrecoverable error |
+| `implementing` | No PR open yet, agent writing code |
+| `pre-PR checklist` | Task Agent has signalled checklist underway |
+| `awaiting diff review` | Task Agent has requested diff approval from human |
 | `stacking offered` | Diff approved; Orchestrating Agent has asked human about stacking, awaiting answer |
 | `stacked — implementing` | Task is stacked (`stacked: true`); Task Agent is actively implementing |
+| `CI running` | PR open, CI checks in progress |
+| `fixing CI (N/M)` | Task Agent is applying a CI fix; N = current attempt, M = max |
+| `awaiting review` | PR marked ready, no review decision yet |
+| `changes requested` | PR reviewer has requested changes, awaiting human approval |
+| `in merge queue` | PR approved and added to merge queue |
+| `merged` | PR merged successfully |
+| `interrupted` | Agent stopped; work was incomplete (no PR, or PR is still draft) |
+| `unattended` | Agent stopped; PR is open and in flight |
+| `escalation required` | CI fix limit exceeded, unrecoverable error, or worktree path not registered |
+
+### Stopped-Agent Activity Derivation
+
+When `TaskGet(agent_id)` returns `failed` or `stopped` for a task with `worktree` set:
+
+1. If `task.pr_url` is set and the PR is open (not draft): **`unattended`**
+2. Otherwise: **`interrupted`**
+3. Verify the worktree path is registered via `git worktree list --porcelain`. If the path is not found, use **`escalation required`** instead.
+
+## Queued Table
+
+Render this section **below the Worktrees table** when there are tasks without worktrees that should be displayed. If there are no queued tasks, omit the section entirely.
+
+```
+## Queued
+
+| Task | Title | Status |
+|------|-------|--------|
+| {id} | {title} | {status} |
+```
+
+**Columns:**
+
+| Column | Source | Notes |
+|--------|--------|-------|
+| Task | `task.id` | |
+| Title | `task.title` | Truncate to 30 chars if needed |
+| Status | Derived from dependencies | `ready` if all `depends_on` are `done`; `blocked on T-{id}` otherwise (show the first unmet dependency) |
 
 ## Pending Reviews Table
 
-Render this section **below the task table** when there are entries in the pending reviews list. If there are no pending reviews, omit the section entirely.
+Render this section **below the Queued table** (or below the Worktrees table if Queued is omitted) when there are entries in the pending reviews list. If there are no pending reviews, omit the section entirely.
 
 ```
 ## Pending Reviews
@@ -108,15 +127,31 @@ Render this section **below the task table** when there are entries in the pendi
 
 ## Rendering Rules
 
+### Worktrees table
+
+1. **Row inclusion:** Every task with `worktree` set in the plan. Include `done` tasks from the current session briefly (with `merged` activity) until the worktree is cleaned up.
+2. **Sort order:** `active` → `monitoring` → `stopped` → `merged`.
+3. **Empty state:** If no worktrees exist and a plan is loaded, omit the Worktrees section header — only show Queued.
+
+### Queued section
+
 1. **Row inclusion:**
-   - Always include: all `in_progress`, `blocked`, and `failed` tasks.
-   - Include `pending` tasks only if all their `depends_on` entries are `done` (ready to start).
-   - Include `done` tasks only if they completed during the current session.
-   - Omit `pending` tasks with unmet dependencies and `cancelled` tasks unless the human asks for a full plan view.
+   - `pending` tasks with all `depends_on` done — show Status as `ready`.
+   - `pending` tasks with unmet dependencies and `blocked` tasks — show Status as `blocked on T-{id}`.
+   - Omit `cancelled` tasks unless the human asks for a full plan view.
+2. **Sort order:** `ready` → `blocked`.
+3. **Empty state:** If no queued tasks, omit the section.
 
-2. **Sort order:** `in_progress` → `blocked`/`failed` → `pending` (ready) → `done`.
+### Pending Reviews
 
-3. **No active plan:** if no plan is loaded, display exactly:
-   > No active plan. Give me an assignment to get started.
+1. Render when there are entries in the pending reviews list. Omit entirely when empty.
 
-4. **Single task:** if only one task is active, still render the table (do not switch to prose).
+### No active plan
+
+If no plan is loaded, display exactly:
+
+> No active plan. Give me an assignment to get started.
+
+### Single worktree
+
+If only one worktree is active, still render the table (do not switch to prose).

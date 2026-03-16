@@ -82,6 +82,8 @@ Agent has stopped or errored. Immediately ask the human:
 > - **Restart** — respawn the agent (up to `MAX_AGENT_RESTARTS` allowed).
 > - **Abandon** — cancel the task and flag dependents blocked.
 
+Immediately update the task's in-memory activity state to `unattended` (if PR is open) or `interrupted` (if no PR or PR is draft), so any subsequent status rendering reflects the agent's death before the human responds.
+
 On restart: use the Agent tool with `subagent_type: general-purpose`, `isolation: "worktree"`, `run_in_background: true`, rebuilding the spawn prompt (SKILL.md + task fields) from the plan YAML. Update `agent_id` in the plan using `yq e -i` with `TASKS_PATH`, following [PLAN_STORAGE.md](../planning-tasks/PLAN_STORAGE.md).
 On abandon after max restarts: mark task `failed`; flag dependents `blocked`.
 
@@ -94,7 +96,7 @@ If `TaskGet` shows the agent is running but the last activity timestamp from the
 > - **Restart** — respawn the agent (up to `MAX_AGENT_RESTARTS` allowed).
 > - **Abandon** — cancel the task and flag dependents blocked.
 
-Handle restart and abandon the same as Dead above.
+Handle restart and abandon the same as Dead above. Do not change the activity state for stalled agents — the agent is technically running, so Agent remains `active` or `monitoring` based on the current Activity value.
 
 ### Healthy (status: running, recent activity)
 

@@ -5024,3 +5024,10 @@ tasks:
     description: >
       Two edits: 1. Append Knowledge Recording section to skills/orchestrating-agents/PROTOTYPE.md. 2. Add "prototype" to valid_categories in scripts/append-knowledge.sh (line 63).
 
+  - id: 91
+    name: worktree-centric-status
+    status: done
+    depends_on: []
+    description: >
+      Retool the status command to be worktree-centric. Replace the single task table with a two-section layout: a Worktrees table (Branch, Task, Agent, Activity, PR) showing every active worktree with its agent liveness state, and a Queued table for tasks without worktrees. Add Agent column values (active, monitoring, stopped) and new Activity values for stopped-agent cases (interrupted, unattended). Update four files: 1. Rewrite skills/orchestrating-agents/STATUS.md with new layout, columns, agent values, activity values, derivation rules, and rendering rules. 2. Rewrite skills/status/SKILL.md to match. 3. Extend Startup Reconciliation in skills/orchestrating-agents/SKILL.md to detect orphaned worktrees. 4. Update Liveness Checks in skills/orchestrating-agents/PR_MONITORING.md to set new activity states on agent death.
+

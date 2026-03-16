@@ -1,72 +1,92 @@
 ---
 name: status
-description: "Display a status table of all active Task Agents, their current activity, and PR state. Invoke with /status."
+description: "Display a status table of all active worktrees, their agent state, current activity, and PR state. Invoke with /status."
 ---
 
-Render the agent status table immediately using the rules below. Do not read any external files. Do not summarise in prose instead of or in addition to the table.
+Render the status display immediately using the rules below. Do not read any external files. Do not summarise in prose instead of or in addition to the tables.
 
-## Status Table Template
+## Worktrees Table
 
 ```
-| Task | Title | Status | Activity | PR | Branch |
-|------|-------|--------|----------|----|--------|
-| {id} | {title} | {status} | {activity} | {pr} | {branch} |
+## Worktrees
+
+| Branch | Task | Agent | Activity | PR |
+|--------|------|-------|----------|----|
+| `{branch}` | {id}: {title} | {agent} | {activity} | {pr} |
 ```
 
 **Columns:**
 
 | Column | Source | Notes |
 |--------|--------|-------|
-| Task | `task.id` from plan YAML | |
-| Title | `task.title` from plan YAML | Truncate to 30 chars if needed |
-| Status | `task.status` from plan YAML | See values below |
-| Activity | Derived from live state | See values below |
-| PR | `task.pr_url` — render as `#N` linked if available, `—` if none | |
-| Branch | `task.branch` — render as code, `—` if not yet created | |
+| Branch | `task.branch` | Rendered as inline code. If stacked, append ` (on {parent_branch})`. If it has stacked dependents, append ` (← T-{child_id})`. |
+| Task | `task.id` + `task.title` | Format: `T-{id}: {title}`. Truncate title to 25 chars if needed. |
+| Agent | Last-known agent liveness | See Agent Values below. |
+| Activity | Last-known activity state | See Activity Values below. |
+| PR | `task.pr_url` — render as `#N` linked if available | `—` if none. |
 
-## Status Values
+**Note:** Agent and Activity values reflect the Orchestrating Agent's last-known state. If agent liveness has not been checked recently, values may be stale. The canonical status rendering (STATUS.md) performs live liveness checks.
 
-| Value | Meaning |
-|-------|---------|
-| `pending` | Not yet started |
-| `in_progress` | A Task Agent is actively working on this |
-| `done` | Merged |
-| `blocked` | Cannot proceed — dependency failed or conflict unresolved |
-| `failed` | Task Agent hit an unrecoverable error |
-| `cancelled` | Abandoned by human instruction |
+## Agent Values
+
+| Value | When to use |
+|-------|-------------|
+| `active` | Agent is running and doing active work: `implementing`, `pre-PR checklist`, `awaiting diff review`, `fixing CI (N/M)`, `stacked — implementing` |
+| `monitoring` | Agent is running but in a passive-wait state: `CI running`, `awaiting review`, `changes requested`, `in merge queue`, `stacking offered` |
+| `stopped` | Agent is known to have failed or stopped |
 
 ## Activity Values
 
 | Activity | When to use |
 |----------|-------------|
-| `waiting to start` | `pending`, all dependencies met — ready to spawn |
-| `implementing` | `in_progress`, no PR open yet |
-| `pre-PR checklist` | `in_progress`, Task Agent has signalled checklist underway |
-| `awaiting diff review` | `in_progress`, Task Agent has requested diff approval |
+| `implementing` | No PR open yet, agent writing code |
+| `pre-PR checklist` | Task Agent has signalled checklist underway |
+| `awaiting diff review` | Task Agent has requested diff approval from human |
+| `stacking offered` | Diff approved; human deciding about stacking |
+| `stacked — implementing` | Task is stacked; agent actively implementing |
 | `CI running` | PR open, CI checks in progress |
-| `fixing CI (attempt N/M)` | Task Agent is applying a CI fix; N = current attempt, M = max |
+| `fixing CI (N/M)` | Agent applying CI fix; N = current attempt, M = max |
 | `awaiting review` | PR marked ready, no review decision yet |
-| `reviewer requested changes` | PR reviewer has requested changes, awaiting human approval |
+| `changes requested` | Reviewer requested changes |
 | `in merge queue` | PR approved and added to merge queue |
 | `merged` | PR merged successfully |
-| `blocked on <task-id>` | Waiting for a dependency that is not yet done |
-| `failed — escalation required` | CI fix limit exceeded or unrecoverable error |
+| `interrupted` | Agent stopped; work was incomplete (no PR or PR is draft) |
+| `unattended` | Agent stopped; PR is open and in flight |
+| `escalation required` | CI fix limit exceeded or unrecoverable error |
+
+## Queued Table
+
+Render below the Worktrees table when there are tasks without worktrees. Omit if no queued tasks exist.
+
+```
+## Queued
+
+| Task | Title | Status |
+|------|-------|--------|
+| {id} | {title} | {status} |
+```
+
+**Columns:**
+
+| Column | Source | Notes |
+|--------|--------|-------|
+| Task | `task.id` | |
+| Title | `task.title` | Truncate to 30 chars if needed |
+| Status | Derived from dependencies | `ready` if all `depends_on` are `done`; `blocked on T-{id}` otherwise |
 
 ## Rendering Rules
 
-1. **Row inclusion:**
-   - Always include: all `in_progress`, `blocked`, and `failed` tasks.
-   - Include `pending` tasks only if all their `depends_on` entries are `done` (ready to start).
-   - Include `done` tasks only if they completed during the current session.
-   - Omit `pending` tasks with unmet dependencies and `cancelled` tasks unless the human asks for a full plan view.
+1. **Worktrees table row inclusion:** Every task with a worktree. Include recently merged tasks until cleanup. Sort: `active` → `monitoring` → `stopped` → `merged`.
 
-2. **Sort order:** `in_progress` → `blocked`/`failed` → `pending` (ready) → `done`.
+2. **Queued section row inclusion:** `pending` tasks with all deps met (show as `ready`). `pending`/`blocked` tasks with unmet deps (show as `blocked on T-{id}`). Omit `cancelled` unless human asks for full view. Sort: `ready` → `blocked`.
 
-3. **No active plan:** if no plan is loaded, display exactly:
+3. **Empty states:** If no worktrees exist and a plan is loaded, omit Worktrees header — show only Queued. If no queued tasks, omit the section.
+
+4. **No active plan:** display exactly:
    > No active plan. Here's what you can do:
-   > - **Plan** — invoke `/orchestrating-agents` and describe what you'd like to build
-   > - **Implement** — invoke `/orchestrating-agents` and point it at an existing plan file
-   > - **Config** — run `/config` to view or update your setup
-   > - **Help** — run `/help` for a full command reference
+   > - **Plan** — describe what you'd like to build and I'll decompose it into tasks
+   > - **Implement** — point me at an existing plan file to start executing
+   >
+   > Also available: `/status`, `/config`, `/help`
 
-4. **Single task:** if only one task is active, still render the table (do not switch to prose).
+5. **Single worktree:** still render the table (do not switch to prose).

@@ -207,8 +207,14 @@ On every startup, before resuming work:
    a. Check whether `branch` exists: `git branch -r | grep <branch>`
    b. Check whether an open PR exists: `gh pr list --head <branch>`
    c. Check whether `agent_id` corresponds to a running agent.
+   d. Check whether `worktree` path is a registered git worktree: `git worktree list --porcelain | grep -qF "worktree <path>"`. If `worktree` is set in the plan but the path is not registered, clear the `worktree` field. If the path is registered but `agent_id` is dead and `status` is not `done`, flag as orphaned worktree.
 4. **Auto-correct** unambiguous mismatches — e.g., branch exists, PR open, but status was not updated: set `status: in_progress` and resume monitoring.
 5. **Escalate to human** for ambiguous state — e.g., `status: in_progress` but no branch, no PR, and no running agent: present the discrepancy and await instructions.
+6. **Orphaned worktrees.** For each worktree flagged as orphaned in step 3d, escalate to the human:
+   > Found orphaned worktree for task `<task-id>` at `<worktree-path>`. Agent is no longer running. What would you like to do?
+   > - **Restart** — respawn the agent in the existing worktree.
+   > - **Clean up** — remove the worktree and reset the task to pending.
+   > - **Leave** — keep the worktree for manual inspection.
 
 ## Startup Greeting
 
@@ -247,7 +253,7 @@ Render the status table (per [STATUS.md](STATUS.md)), then:
 
 ## Status Display
 
-When the human asks for a status update — in any phrasing — render the agent status table. The table template and rendering rules are defined in STATUS.md (loaded alongside this skill). Do not summarise in prose. Always use the table.
+When the human asks for a status update — in any phrasing — render the worktree-centric status display. The Worktrees table, Queued table, Pending Reviews table, and all rendering rules are defined in STATUS.md (loaded alongside this skill). Do not summarise in prose. Always use the tables.
 
 ## Plan Update Rule
 
