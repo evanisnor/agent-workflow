@@ -13,7 +13,7 @@
 
 set -euo pipefail
 
-source "${CLAUDE_SKILL_DIR}/../../scripts/config.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/config.sh"
 
 STATE_FILE="/tmp/dispatch-review-state.yaml"
 
@@ -24,16 +24,17 @@ fi
 
 # Fetch PRs where the current user is a requested reviewer
 # Only extract fields needed — never pass full API payload to agent context
-RAW="$(gh pr list --review-requested @me \
-  --json number,title,url,author \
-  --jq '.[] | [.number | tostring, .title, .url, .author.login] | @tsv' \
+RAW="$(gh pr list --search "review-requested:@me" \
+  --json number,title,url \
+  --jq '.[] | [(.number | tostring), .title, .url] | @tsv' \
   2>/dev/null)" || { echo "Error: GitHub API call failed" >&2; exit 1; }
 
 # Build lists of currently-seen PR data (bash 3.2 compatible — no associative arrays)
 CURRENT_NUMBERS=""
 CURRENT_DATA=""
-while IFS=$'\t' read -r NUMBER TITLE URL AUTHOR; do
+while IFS=$'\t' read -r NUMBER TITLE URL; do
   [[ -z "${NUMBER}" ]] && continue
+  AUTHOR="$(gh pr view "${NUMBER}" --json author --jq '.author.login' 2>/dev/null || echo "unknown")"
   CURRENT_NUMBERS="${CURRENT_NUMBERS}${NUMBER}"$'\n'
   CURRENT_DATA="${CURRENT_DATA}${NUMBER}	${URL}	${TITLE}	${AUTHOR}"$'\n'
 done <<< "${RAW}"

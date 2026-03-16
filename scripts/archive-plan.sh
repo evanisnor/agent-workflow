@@ -11,7 +11,7 @@ if [[ -z "${PLAN_FILE}" ]]; then
   exit 1
 fi
 
-source "${CLAUDE_SKILL_DIR}/../../scripts/config.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/config.sh"
 
 FULL_PATH="${PLAN_REPO}/${PLAN_FILE}"
 

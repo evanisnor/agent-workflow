@@ -5092,3 +5092,15 @@ tasks:
       deny rule note). File-path tools like Write(**) and Edit(**) are correct
       as-is.
 
+  - id: 99
+    name: fix-check-review-requests-errors
+    status: done
+    depends_on: [96]
+    description: >
+      Fix three cascading errors in check-review-requests.sh: CLAUDE_SKILL_DIR
+      unbound (use BASH_SOURCE[0]-relative sourcing instead), invalid gh flag
+      (--review-requested @me → --search "review-requested:@me"), and author
+      field incompatible with --search (fetch author per-PR in the loop). Apply
+      the same CLAUDE_SKILL_DIR fix to check-merge-queue.sh and archive-plan.sh.
+      Add script location notes to skill docs.
+

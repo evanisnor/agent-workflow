@@ -355,6 +355,8 @@ Store the returned cron job ID for the session. Set up the activity poll:
 
 ### Consolidated Check Prompt
 
+> **Script locations:** `check-review-requests.sh` and `check-merge-queue.sh` are in `scripts/` (plugin root). `check-pr-status.sh` is in `skills/orchestrating-agents/scripts/`.
+
 On each activity poll cycle, execute the following checks in order:
 
 1. **Review requests:** Run `check-review-requests.sh`. Handle `NEW_REVIEW_REQUEST` and `REVIEW_REMOVED` events per [CODE_REVIEW.md](CODE_REVIEW.md).

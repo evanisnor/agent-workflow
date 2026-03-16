@@ -7,6 +7,8 @@ After a Task Agent opens a PR, the Orchestrating Agent monitors it through to me
 - `check-pr-status.sh` — checks PR state, review decision, and CI check summaries.
 - `check-merge-queue.sh` — checks merge queue status after the PR is added to the queue.
 
+> **Script locations:** `check-review-requests.sh` and `check-merge-queue.sh` are in `scripts/` (plugin root). `check-pr-status.sh` is in `skills/orchestrating-agents/scripts/`.
+
 Both scripts read `POLLING_TIMEOUT_MINUTES` from `config.sh`, persist state between invocations via state files, and emit **state-change events only** — never full API response payloads.
 
 ## Retry and Timeout Limits
