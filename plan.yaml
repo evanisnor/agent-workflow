@@ -3437,3 +3437,28 @@ tasks:
       env var names. Also fix missing CODE_REVIEW_SKILL export in config.sh.
       Spawn behavior changes from subagent_type:<skill-name> to general-purpose
       agent with the prompt text as instructions.
+
+  - id: 70
+    name: schedule-wait-sh
+    status: done
+    depends_on: [69]
+    description: >
+      Create skills/executing-tasks/scripts/schedule-wait.sh. Accepts a single
+      ISO 8601 datetime argument (or "now"). If the datetime is in the past or
+      "now" is passed, exits 0 immediately. Otherwise computes delta seconds to
+      the target time, prints a human-readable status line, and runs
+      caffeinate -t <seconds> to hold the process until then. This script is
+      the only place wait logic lives; SKILL.md references it by name.
+
+  - id: 71
+    name: delay-scheduling-skill
+    status: done
+    depends_on: [70]
+    description: >
+      Insert two scheduling gates into skills/executing-tasks/SKILL.md.
+      Gate 1 after "Watch CI" (step 7), before "Mark PR ready" (step 8):
+      ask the Primary Agent whether to mark ready now or at a specific time;
+      use schedule-wait.sh if a datetime is given.
+      Gate 2 before "Merge or add to queue" (step 10): same pattern for merge
+      timing. Add a prominent note at the top of the scheduling section that
+      time-delayed PR readiness and merging are supported behaviors.
