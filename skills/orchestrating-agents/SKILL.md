@@ -46,6 +46,8 @@ You do **not** plan work, write code, or push commits. Those are the responsibil
 
 Run `watch-review-requests.sh` continuously throughout the session to detect incoming GitHub review requests. Handle all events per [CODE_REVIEW.md](CODE_REVIEW.md).
 
+On startup, this is launched in Startup Reconciliation step 7a. For sessions that skip reconciliation (e.g., first-run Scenario A), start `watch-review-requests.sh` immediately after the greeting.
+
 ### 1. Planning Phase
 
 1. Human assigns work.
@@ -132,7 +134,7 @@ See [STACKED_WORKTREES.md](STACKED_WORKTREES.md) for full lifecycle documentatio
 
 ### 4. PR and CI Monitoring
 
-After a PR is opened, use `watch-pr-status.sh` and `watch-merge-queue.sh` as described in [PR_MONITORING.md](PR_MONITORING.md).
+After a PR is opened — or after startup reconciliation resumes monitoring for an existing open PR (Startup Reconciliation step 7b) — use `watch-pr-status.sh` and `watch-merge-queue.sh` as described in [PR_MONITORING.md](PR_MONITORING.md). Handle all exit codes identically regardless of whether the PR was newly opened or resumed from a prior session.
 
 ### 5. Post-Merge Cleanup
 
@@ -216,6 +218,16 @@ On every startup, before resuming work:
    > - **Clean up** — remove the worktree and reset the task to pending.
    > - **Leave** — keep the worktree for manual inspection.
 
+7. **Resume monitoring.** After resolving all escalations above, start background monitoring:
+
+   a. **Review request monitoring.** Start `watch-review-requests.sh` as a background process. This fulfills Section 0 (Review Monitoring) for sessions that begin with startup reconciliation.
+
+   b. **PR monitoring for existing open PRs.** For each task with `status: in_progress` and an open PR (detected in step 3b):
+      - If the PR is in the merge queue: call `watch-merge-queue.sh <pr-url>` and handle exit codes per [PR_MONITORING.md](PR_MONITORING.md) § Merge Queue Monitoring.
+      - Otherwise (PR open, awaiting review or CI): call `watch-pr-status.sh <pr-url>` and handle exit codes per [PR_MONITORING.md](PR_MONITORING.md) § PR and CI Monitoring.
+
+      Resume monitoring regardless of whether the Task Agent is alive or dead. A dead agent is handled separately by the orphaned worktree escalation (step 6) or the Recommendation Priority Table, but monitoring must run independently so PR events are not missed.
+
 ## Startup Greeting
 
 After completing startup reconciliation, output a concierge greeting — a fast orientation with counts and an actionable recommendation. Do **not** render the full status table (that is for `/status`). The greeting follows one of four mutually exclusive scenarios below.
@@ -287,7 +299,7 @@ In Scenario B, select exactly one recommendation — the first matching conditio
 |---|---|---|
 | 1 | Pending reviews with `status: ready` | List them with PR links, ask if human wants to open the first one |
 | 2 | Stopped agents, no PR (activity: `interrupted`) | "Some agents were interrupted. Run `/status` for details, or I can restart or clean up those worktrees." |
-| 3 | Stopped agents, open PR (activity: `unattended`) | "Some agents stopped with open PRs. I can restart those agents to resume monitoring." |
+| 3 | Stopped agents, open PR (activity: `unattended`) | "Some agents stopped with open PRs. PR monitoring has been resumed automatically. I can restart the agents if you'd like them to respond to CI failures or reviewer comments." |
 | 4 | Tasks ready to start (queued with all `depends_on` done) | "N task(s) ready to start. Want me to spawn the next batch?" |
 | 5 | All agents running, remaining tasks blocked | "All agents running. Waiting on in-progress tasks to unblock the next batch." |
 

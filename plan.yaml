@@ -5037,3 +5037,10 @@ tasks:
     description: >
       Replace the startup greeting in skills/orchestrating-agents/SKILL.md with a worktree-centric concierge format. The old greeting either dumped the full status table or showed a generic message. The new greeting provides a fast orientation: a bulleted summary of worktrees, PRs, queued tasks, and reviews (counts, not tables), plus a single actionable recommendation chosen by priority. Defines four mutually exclusive scenarios (first-run, active plan, completed plan, no plan), a recommendation priority table, bullet construction rules aligned with STATUS.md terminology, untracked worktree detection, and a determinism rule.
 
+  - id: 93
+    name: resume-pr-monitoring-on-startup
+    status: done
+    depends_on: [11, 92]
+    description: >
+      Fix the Orchestrating Agent's Startup Reconciliation to automatically resume PR monitoring for existing open PRs. Currently, reconciliation detects in-progress tasks with open PRs but never launches watch-pr-status.sh or watch-merge-queue.sh for them, leaving the agent idle after greeting. Add a new step 7 to Startup Reconciliation that starts watch-review-requests.sh and resumes PR monitoring for every in-progress task with an open PR. Also clarify Section 0 (Review Monitoring) startup tie-in, expand Section 4 (PR and CI Monitoring) to cover resumed monitoring, and update Recommendation Priority 3 to reflect that monitoring is resumed automatically. All changes are in skills/orchestrating-agents/SKILL.md only — no script changes needed.
+
