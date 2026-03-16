@@ -4193,7 +4193,7 @@ tasks:
 
   - id: 85
     name: editor-open-review-instructions
-    status: todo
+    status: done
     depends_on: [84]
     description: >
       Update skills/orchestrating-agents/REVIEW.md to support opening the worktree in an editor

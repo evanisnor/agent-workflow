@@ -53,13 +53,21 @@ At any point during a diff review the human can switch between display modes by 
 
 The chosen mode applies only to the current review session and does not write back to config.
 
+## Open in Editor
+
+At any point during a diff review, if `EDITOR_APP` is configured, the human can respond with `open editor`. When this happens:
+
+1. Call `open-in-editor.sh "<worktree-path>"`.
+2. Confirm to the human: "Worktree opened in `<EDITOR_APP>`."
+3. Continue the review loop from the same step — the diff window stays open.
+
 ## Initial Diff Review Loop
 
 Triggered when a Task Agent requests approval to open a PR.
 
 1. **Receive request** from Task Agent: "requesting approval to open PR for task `<task-id>`".
 2. Call `open-review-pane.sh "review-<task-id>" "<worktree-path>"` — opens a new tmux window showing `git diff <base>...HEAD`. Store the returned window ID.
-3. Present the full diff to the human and ask for approval.
+3. Present the full diff to the human and ask for approval. If `EDITOR_APP` is configured, also say: "Type `open editor` to open the worktree in `<EDITOR_APP>`."
 4. **On approval:**
    a. Call `close-pane.sh "<window-id>"`.
    b. Run the **Verification Gate** (see below) before notifying the Task Agent.
@@ -108,7 +116,7 @@ Triggered when a PR reviewer requests changes after the PR is open.
 4. **On rejection:** tell the Task Agent the human does not agree with the requested change and provide a response to relay to the reviewer.
 5. Once the Task Agent has implemented and pushed the approved change:
    a. Call `open-review-pane.sh "review-update-<task-id>" "<worktree-path>"`. Store the returned window ID.
-   b. Present the updated diff to the human for confirmation.
+   b. Present the updated diff to the human for confirmation. If `EDITOR_APP` is configured, also say: "Type `open editor` to open the worktree in `<EDITOR_APP>`."
    c. Call `close-pane.sh "<window-id>"` after human confirms.
    d. **Propagate to stacked worktrees (if any):**
       1. Check the plan for tasks where `stacked: true` and `base_branch` matches this task's `branch`.
@@ -126,6 +134,6 @@ Triggered when a merge queue conflict is detected.
 2. Notify the Task Agent to resolve the conflict in its worktree.
 3. When the Task Agent reports resolution:
    a. Call `open-review-pane.sh "review-conflict-<task-id>" "<worktree-path>"`. Store the returned window ID.
-   b. Present the resolved diff to the human for approval.
+   b. Present the resolved diff to the human for approval. If `EDITOR_APP` is configured, also say: "Type `open editor` to open the worktree in `<EDITOR_APP>`."
    c. **On approval:** call `close-pane.sh "<window-id>"`, notify Task Agent to push.
    d. **On rejection:** close window, send structured rejection to Task Agent (see Initial Diff Review Loop step 5).
