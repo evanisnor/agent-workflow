@@ -105,7 +105,7 @@ When implementing tasks from `plan.yaml`:
 - Before starting a task, set its `status` to `in_progress` in `plan.yaml`.
 - After completing a task, set its `status` to `done` in `plan.yaml`.
 - Include the `plan.yaml` status update in the task's commit.
-- After completing each task, commit and push before starting the next.
+- Commit and push to `origin/main` immediately after completing each task. Do not wait for the user to ask — committing and pushing is part of completing the task.
 - Commit message format: `Task N: <short description>`
 
 ## Key Reference Files
