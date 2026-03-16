@@ -5030,4 +5030,10 @@ tasks:
     depends_on: []
     description: >
       Retool the status command to be worktree-centric. Replace the single task table with a two-section layout: a Worktrees table (Branch, Task, Agent, Activity, PR) showing every active worktree with its agent liveness state, and a Queued table for tasks without worktrees. Add Agent column values (active, monitoring, stopped) and new Activity values for stopped-agent cases (interrupted, unattended). Update four files: 1. Rewrite skills/orchestrating-agents/STATUS.md with new layout, columns, agent values, activity values, derivation rules, and rendering rules. 2. Rewrite skills/status/SKILL.md to match. 3. Extend Startup Reconciliation in skills/orchestrating-agents/SKILL.md to detect orphaned worktrees. 4. Update Liveness Checks in skills/orchestrating-agents/PR_MONITORING.md to set new activity states on agent death.
+  - id: 92
+    name: worktree-centric-concierge-greeting
+    status: done
+    depends_on: [30, 91]
+    description: >
+      Replace the startup greeting in skills/orchestrating-agents/SKILL.md with a worktree-centric concierge format. The old greeting either dumped the full status table or showed a generic message. The new greeting provides a fast orientation: a bulleted summary of worktrees, PRs, queued tasks, and reviews (counts, not tables), plus a single actionable recommendation chosen by priority. Defines four mutually exclusive scenarios (first-run, active plan, completed plan, no plan), a recommendation priority table, bullet construction rules aligned with STATUS.md terminology, untracked worktree detection, and a determinism rule.
 
