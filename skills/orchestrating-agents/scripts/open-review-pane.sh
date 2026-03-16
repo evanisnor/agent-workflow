@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # open-review-pane.sh — open a new tmux window showing the branch diff for review
-# Usage: open-review-pane.sh <window-name> <worktree-path> [mode]
+# Usage: open-review-pane.sh <window-name> <worktree-path> [diff-range-or-mode] [mode]
+#
+# If the third argument contains "...", it is treated as a git diff range
+# (e.g. "origin/main...origin/feature-branch") and mode shifts to arg4.
+# Otherwise, the third argument is treated as the display mode.
 #
 # mode: "split" (delta --side-by-side) or "unified" (delta default).
 #       Defaults to $DIFF_MODE from config.sh, then "split".
@@ -14,10 +18,19 @@ set -euo pipefail
 
 WINDOW_NAME="${1:-}"
 WORKTREE_PATH="${2:-}"
-MODE="${3:-${DIFF_MODE:-split}}"
+DIFF_RANGE=""
+
+# Disambiguate arg3: "..." means diff range, otherwise display mode
+_ARG3="${3:-}"
+if [[ "${_ARG3}" == *"..."* ]]; then
+  DIFF_RANGE="${_ARG3}"
+  MODE="${4:-${DIFF_MODE:-split}}"
+else
+  MODE="${_ARG3:-${DIFF_MODE:-split}}"
+fi
 
 if [[ -z "${WINDOW_NAME}" || -z "${WORKTREE_PATH}" ]]; then
-  echo "Usage: open-review-pane.sh <window-name> <worktree-path> [mode]" >&2
+  echo "Usage: open-review-pane.sh <window-name> <worktree-path> [diff-range-or-mode] [mode]" >&2
   exit 1
 fi
 
@@ -32,20 +45,31 @@ if [[ -z "${TMUX:-}" ]]; then
   exit 1
 fi
 
-# Detect the base branch from the remote HEAD pointer; fall back to origin/main
-BASE_BRANCH="$(git -C "${WORKTREE_PATH}" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null \
-  | sed 's@^refs/remotes/@@')" || true
-BASE_BRANCH="${BASE_BRANCH:-origin/main}"
+# When using a remote diff range, fetch origin to ensure refs are fresh
+if [[ -n "${DIFF_RANGE}" ]]; then
+  git -C "${WORKTREE_PATH}" fetch origin --quiet 2>/dev/null || true
+fi
+
+# Determine the diff range
+if [[ -n "${DIFF_RANGE}" ]]; then
+  RANGE="${DIFF_RANGE}"
+else
+  # Detect the base branch from the remote HEAD pointer; fall back to origin/main
+  BASE_BRANCH="$(git -C "${WORKTREE_PATH}" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null \
+    | sed 's@^refs/remotes/@@')" || true
+  BASE_BRANCH="${BASE_BRANCH:-origin/main}"
+  RANGE="${BASE_BRANCH}...HEAD"
+fi
 
 # Build diff command — use delta when available, respecting the requested mode
 if command -v delta &>/dev/null; then
   if [[ "${MODE}" == "split" ]]; then
-    DIFF_CMD="git -C \"${WORKTREE_PATH}\" diff \"${BASE_BRANCH}...HEAD\" | delta --side-by-side"
+    DIFF_CMD="git -C \"${WORKTREE_PATH}\" diff \"${RANGE}\" | delta --side-by-side"
   else
-    DIFF_CMD="git -C \"${WORKTREE_PATH}\" diff \"${BASE_BRANCH}...HEAD\" | delta"
+    DIFF_CMD="git -C \"${WORKTREE_PATH}\" diff \"${RANGE}\" | delta"
   fi
 else
-  DIFF_CMD="git -C \"${WORKTREE_PATH}\" diff \"${BASE_BRANCH}...HEAD\""
+  DIFF_CMD="git -C \"${WORKTREE_PATH}\" diff \"${RANGE}\""
 fi
 
 # Open a new named window in the current session

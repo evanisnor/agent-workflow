@@ -5104,3 +5104,16 @@ tasks:
       the same CLAUDE_SKILL_DIR fix to check-merge-queue.sh and archive-plan.sh.
       Add script location notes to skill docs.
 
+  - id: 100
+    name: fix-review-pane-diff-range
+    status: done
+    depends_on: []
+    description: >
+      Fix open-review-pane.sh to accept an explicit diff range for incoming PR
+      reviews. The script treated arg3 as display mode only, ignoring the
+      caller-provided remote diff range (e.g. origin/main...origin/feature),
+      causing the diff to show local changes instead of PR changes. Add arg3
+      disambiguation (contains "..." = diff range, otherwise mode), git fetch
+      before remote diffs, and add open-review-pane.sh and close-pane.sh to
+      CODE_REVIEW.md Script locations note.
+

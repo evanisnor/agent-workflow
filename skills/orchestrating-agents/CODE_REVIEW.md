@@ -6,7 +6,7 @@ This document defines how the Orchestrating Agent handles incoming GitHub pull r
 
 The activity poll runs `check-review-requests.sh` on each cycle. On each `NEW_REVIEW_REQUEST` event it immediately notifies the human and spawns a Review Agent in the background. The Review Agent analyzes the PR and returns structured context. When the human is ready to review, the OA presents that context and opens a tmux diff window. The human approves via the OA; comments are made manually on GitHub.
 
-> **Script locations:** `check-review-requests.sh` is in `scripts/` (plugin root). `approve-pr.sh` is in `skills/orchestrating-agents/scripts/`.
+> **Script locations:** `check-review-requests.sh` is in `scripts/` (plugin root). `approve-pr.sh`, `open-review-pane.sh`, and `close-pane.sh` are in `skills/orchestrating-agents/scripts/`.
 
 ## Pending Reviews
 
