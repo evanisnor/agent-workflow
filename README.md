@@ -103,6 +103,16 @@ For each task, once a Task Agent has implemented the work and passed its pre-PR 
 
 You can also configure an optional **verification gate** that runs after diff approval and before the PR opens. When enabled, the Orchestrating Agent opens a tmux window pointed at the task's worktree so you can start the app, exercise the feature, and confirm it behaves correctly — before the PR is visible to reviewers. For projects with automated verification, you can instead delegate to a skill that runs integration tests or deploys to a staging environment and reports back. Both options can be combined, and either can be omitted entirely.
 
+### ⚡ Stack dependent tasks during review
+
+After you approve a diff, before the Orchestrating Agent notifies the Task Agent to open its PR, it checks whether any tasks depend directly on the one just approved. If so, it asks:
+
+> "Task `auth-middleware` depends directly on this one. Would you like me to start implementing it now as a stacked worktree on top of `feat/auth-tokens`?"
+
+Say yes and the Orchestrating Agent spawns a second Task Agent immediately — in its own worktree, rebased onto the first task's branch — so implementation of the dependent task begins while the first PR is in review. If reviewers request changes to the first task, the Orchestrating Agent automatically rebases the stacked worktree onto the updated branch and surfaces any conflicts for your review. When the first PR merges, the stacked worktree is rebased onto main automatically. GitHub retargets the PR base on its own.
+
+Stacking is opt-in and offered one dependent at a time. You stay in control of how deep the stack goes.
+
 ### 🚀 Let the agents handle the noise
 
 After you approve a diff, the Task Agent opens a draft PR, watches CI, marks the PR ready when CI passes, and adds it to the merge queue. At each of those last two transitions the agent asks whether to proceed immediately or wait until a time you specify — reply `now` or describe when (e.g. "Monday morning" or "tomorrow at 9am") to schedule the transition for later. CI retries, merge conflict resolution, and reviewer reply threading all happen without your involvement. You are only pulled back in when something genuinely needs a decision: a CI failure that exceeded the retry limit, a reviewer requesting changes, or a merge conflict that requires your guidance.
@@ -169,6 +179,7 @@ All external content — PR comments, CI log summaries, reviewer feedback, issue
 - **Spawning a Planning Agent** — before any work is decomposed.
 - **Approving the plan** — before anything is saved.
 - **Spawning Task Agents** — before any code is written.
+- **Stacking a dependent Task Agent** — offered after each approved diff; one at a time, opt-in.
 - **Diff review** — before every PR is opened.
 - **Reviewer-requested changes** — before the Task Agent acts on them.
 - **CI failures beyond the retry limit** — escalated with a summary of what failed.
