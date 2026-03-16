@@ -24,7 +24,7 @@ In a Claude Code session, invoke the skill:
 
 The Orchestrating Agent will run startup reconciliation, then greet you with a status summary and next-step options. Describe the work in plain language, point to a PRD or design document, or reference a tracker epic — the agent will ask for your approval before spawning a Planning Agent.
 
-From there, the workflow runs automatically: plan approval, parallel task implementation, diff review before each PR opens, CI monitoring, and merge queue management. You're pulled in only at the gates listed above.
+From there, the workflow runs automatically: plan approval, parallel task implementation, diff review before each PR opens, CI monitoring, and merge queue management. You're pulled in only at specific approval gates — see How It Works below.
 
 ## Requirements
 
