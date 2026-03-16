@@ -67,7 +67,10 @@ Triggered when a Task Agent requests approval to open a PR.
 
 1. **Receive request** from Task Agent: "requesting approval to open PR for task `<task-id>`".
 2. Call `open-review-pane.sh "review-<task-id>" "<worktree-path>"` — opens a new tmux window showing `git diff <base>...HEAD`. Store the returned window ID.
-3. Present the full diff to the human and ask for approval. If `EDITOR_APP` is configured, also say: "Type `open editor` to open the worktree in `<EDITOR_APP>`."
+3. Present the full diff to the human:
+   > Diff open in **review-`<task-id>`** — approve, request changes, or type a command:
+   > - `split` / `unified` — switch diff display mode
+   > - `open editor` — open the worktree in `<EDITOR_APP>`  ← only if `EDITOR_APP` is configured
 4. **On approval:**
    a. Call `close-pane.sh "<window-id>"`.
    b. Run the **Verification Gate** (see below) before notifying the Task Agent.

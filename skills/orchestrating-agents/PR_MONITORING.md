@@ -63,8 +63,11 @@ Once a Task Agent calls `add-to-merge-queue.sh`, call `watch-merge-queue.sh <pr-
 2. Await human instructions before re-queuing or abandoning.
 
 ### Ejected or timeout (exit 3)
-1. Notify the human with the PR URL and reason (ejected vs. timeout).
-2. Await instructions: re-queue or abandon the task.
+1. Ask the human:
+   > PR [#N](<url>) was <ejected / timed out> from the merge queue. What would you like to do?
+   > - **Re-queue** — add the PR back to the merge queue.
+   > - **Abandon** — cancel the task and flag dependents blocked.
+2. Await the human's choice.
 3. On abandon: update task `status: cancelled` in the plan; flag dependents `blocked`.
 
 ## Liveness Checks
@@ -73,10 +76,11 @@ After each polling cycle during PR monitoring, check liveness for every `in_prog
 
 ### Dead (status: failed or stopped)
 
-Agent has stopped or errored. Immediately escalate to the human with:
-- `agent_id` and `task_id`.
-- Last known activity timestamp.
-- Option to restart the agent (up to `MAX_AGENT_RESTARTS`) or abandon the task.
+Agent has stopped or errored. Immediately ask the human:
+
+> Task Agent `<agent_id>` (task `<task_id>`) has stopped — last activity: <timestamp>. What would you like to do?
+> - **Restart** — respawn the agent (up to `MAX_AGENT_RESTARTS` allowed).
+> - **Abandon** — cancel the task and flag dependents blocked.
 
 On restart: use the Agent tool with `subagent_type: general-purpose`, `isolation: "worktree"`, `run_in_background: true`, rebuilding the spawn prompt (SKILL.md + task fields) from the plan YAML. Update `agent_id` in the plan using `yq e -i` with `TASKS_PATH`, following [PLAN_STORAGE.md](../planning-tasks/PLAN_STORAGE.md).
 On abandon after max restarts: mark task `failed`; flag dependents `blocked`.
@@ -85,8 +89,10 @@ On abandon after max restarts: mark task `failed`; flag dependents `blocked`.
 
 If `TaskGet` shows the agent is running but the last activity timestamp from the plan is older than `POLLING_TIMEOUT_MINUTES`, notify the human:
 
-> Agent `<agent_id>` for task `<task_id>` appears stalled — no activity for N minutes.
-> Options: (1) wait another polling cycle, (2) restart the agent, (3) abandon the task.
+> Agent `<agent_id>` for task `<task_id>` appears stalled — no activity for N minutes. What would you like to do?
+> - **Wait** — I'll check again at the next polling cycle.
+> - **Restart** — respawn the agent (up to `MAX_AGENT_RESTARTS` allowed).
+> - **Abandon** — cancel the task and flag dependents blocked.
 
 Handle restart and abandon the same as Dead above.
 

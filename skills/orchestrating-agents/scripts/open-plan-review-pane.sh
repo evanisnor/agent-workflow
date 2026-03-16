@@ -72,6 +72,6 @@ fi
 
 # Open a new named window in the current session
 WINDOW_ID="$(tmux new-window -P -F '#{window_id}' -n "${WINDOW_NAME}" \
-  "bash -c '${DISPLAY_CMD}; printf \"\n${SEPARATOR}\n\"; read -r -p \"Press Enter to close...\" _'")"
+  "bash -c '${DISPLAY_CMD}; printf \"\n${SEPARATOR}\n\"; read -r -p \"When done reviewing, return to Claude to approve or give feedback. Press Enter to close this window.\" _'")"
 
 echo "${WINDOW_ID}"

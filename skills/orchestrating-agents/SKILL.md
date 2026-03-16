@@ -228,9 +228,8 @@ Render the status table (per [STATUS.md](STATUS.md)), then:
 > No active plan. Here's what you can do:
 > - **Plan** — describe what you'd like to build and I'll decompose it into tasks
 > - **Implement** — point me at an existing plan file to start executing
-> - **Status** — run `/status` to check agent activity
-> - **Config** — run `/config` to view or update your setup
-> - **Help** — run `/help` for a full command reference
+>
+> Also available: `/status`, `/config`, `/help`
 
 ## Status Display
 

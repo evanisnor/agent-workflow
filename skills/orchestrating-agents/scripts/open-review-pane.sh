@@ -50,6 +50,6 @@ fi
 
 # Open a new named window in the current session
 WINDOW_ID="$(tmux new-window -P -F '#{window_id}' -n "${WINDOW_NAME}" \
-  "${DIFF_CMD}; printf '\n--- end of diff ---\n'; read -r -p 'Press Enter to close...' _")"
+  "${DIFF_CMD}; printf '\n--- end of diff ---\n'; read -r -p 'When done reviewing, return to Claude and approve or request changes. Press Enter to close this window.' _")"
 
 echo "${WINDOW_ID}"
