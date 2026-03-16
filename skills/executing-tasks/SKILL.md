@@ -18,6 +18,8 @@ You are a Task Agent. You implement a single assigned task in your dedicated git
 
 You do **not** plan work, spawn other agents, or make decisions about tasks beyond your own assignment.
 
+> **Notification formatting:** All human-facing notifications must follow the banner styles defined in [NOTIFICATIONS.md](../NOTIFICATIONS.md).
+
 ## Scheduling Support
 
 **Time-delayed PR readiness and merging are supported behaviors.** At two points in the PR lifecycle (after CI passes, and after reviewer approval), this agent will ask the Primary Agent whether to proceed immediately or wait until a specified time. Users and operators may respond in natural language (e.g. "Monday morning", "tomorrow at 9am") — the agent converts the response to an ISO 8601 datetime before passing it to `schedule-wait.sh`, which uses `caffeinate -t <seconds>` to hold the process until the target time.
@@ -91,7 +93,7 @@ Run `load-knowledge.sh --category ci --category conflict --category pr-review --
       # Commit per PLAN_STORAGE.md write-with-lock pattern
       ```
 
-   c. Immediately notify the Primary Agent: "Draft PR opened for task `<task-id>`: <pr-url>"
+   c. Immediately notify the Primary Agent: **-- Draft PR opened:** "Draft PR opened for task `<task-id>`: <pr-url>"
 
 6. **Probe the repo** by sourcing `probe-repo.sh`. This exports `MERGE_QUEUE_ENABLED` and `HAS_REQUIRED_CHECKS` for use in the steps below.
 
@@ -100,7 +102,13 @@ Run `load-knowledge.sh --category ci --category conflict --category pr-review --
    - `false`: skip CI watching. No checks are required by the repo.
 
 7.5. **Schedule PR readiness** — ask the Primary Agent:
-   > "CI is passing on [#N](<pr-url>) (task `<task-id>`). Should I mark it ready for review now, or would you like me to wait until a specific time? (reply 'now' or describe when, e.g. 'Monday morning' or 'tomorrow at 9am')"
+   > ---
+   >
+   > **>>> ACTION REQUIRED**
+   >
+   > CI is passing on [#N](<pr-url>) (task `<task-id>`). Should I mark it ready for review now, or would you like me to wait until a specific time? (reply 'now' or describe when, e.g. 'Monday morning' or 'tomorrow at 9am')
+   >
+   > ---
    - If "now" (or no preference): proceed immediately to step 8.
    - If a time is given: convert it to an ISO 8601 datetime, run `schedule-wait.sh <datetime>`, then proceed to step 8.
 
@@ -109,7 +117,13 @@ Run `load-knowledge.sh --category ci --category conflict --category pr-review --
 9. **Monitor review feedback** via the Primary Agent. Implement and push human-approved changes.
 
 9.5. **Schedule merge** — ask the Primary Agent:
-   > "[#N](<pr-url>) (task `<task-id>`) is approved and ready to merge. Should I add it to the merge queue now, or wait until a specific time? (reply 'now' or describe when, e.g. 'Monday morning' or 'tomorrow at 9am')"
+   > ---
+   >
+   > **>>> ACTION REQUIRED**
+   >
+   > [#N](<pr-url>) (task `<task-id>`) is approved and ready to merge. Should I add it to the merge queue now, or wait until a specific time? (reply 'now' or describe when, e.g. 'Monday morning' or 'tomorrow at 9am')
+   >
+   > ---
    - If "now" (or no preference): proceed immediately to step 10.
    - If a time is given: convert it to an ISO 8601 datetime, run `schedule-wait.sh <datetime>`, then proceed to step 10.
 

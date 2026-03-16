@@ -2,6 +2,8 @@
 
 This document defines the procedures for presenting plans and diffs to the human and relaying decisions to Planning Agents and Task Agents.
 
+> **Notification formatting:** All human-facing notifications must follow the banner styles defined in [NOTIFICATIONS.md](../NOTIFICATIONS.md).
+
 ## Plan Review Loop
 
 Triggered when the Planning Agent has written the plan YAML to a temp file and returned the temp path.
@@ -10,7 +12,14 @@ Triggered when the Planning Agent has written the plan YAML to a temp file and r
 
 1. **Receive temp path** from the Planning Agent (e.g. `/tmp/dispatch-plan-<slug>.yaml`).
 2. Call `open-plan-review-pane.sh "review-plan-<slug>" "<temp-path>"` — opens a new tmux window showing the full plan YAML. Store the returned window ID.
-3. Tell the human: "Plan draft ready — review in the **review-plan-`<slug>`** tmux window. Approve or share feedback here."
+3. Tell the human:
+   > ---
+   >
+   > **>>> ACTION REQUIRED**
+   >
+   > Plan draft ready — review in the **review-plan-`<slug>`** tmux window. Approve or share feedback here.
+   >
+   > ---
 4. **On approval:**
    a. Call `close-pane.sh "<window-id>"`.
    b. Signal the Planning Agent to save: "Plan approved — please save to plan storage and return the final path."
@@ -26,7 +35,14 @@ Triggered when the Planning Agent proposes a mid-flight amendment (add task, spl
 
 1. **Receive temp path and original plan path** from the Planning Agent.
 2. Call `open-plan-review-pane.sh "review-amendment-<slug>" "<temp-path>" "<original-plan-path>"` — opens a tmux window showing `git diff --no-index` between the original and the proposed amendment. Store the returned window ID.
-3. Tell the human: "Proposed amendment ready — review in the **review-amendment-`<slug>`** tmux window. Approve or share feedback here."
+3. Tell the human:
+   > ---
+   >
+   > **>>> ACTION REQUIRED**
+   >
+   > Proposed amendment ready — review in the **review-amendment-`<slug>`** tmux window. Approve or share feedback here.
+   >
+   > ---
 4. **On approval:**
    a. Call `close-pane.sh "<window-id>"`.
    b. Signal the Planning Agent to save: "Amendment approved — please save and return the final path."
@@ -68,9 +84,15 @@ Triggered when a Task Agent requests approval to open a PR.
 1. **Receive request** from Task Agent: "requesting approval to open PR for task `<task-id>`".
 2. Call `open-review-pane.sh "review-<task-id>" "<worktree-path>"` — opens a new tmux window showing `git diff <base>...HEAD`. Store the returned window ID.
 3. Present the full diff to the human:
+   > ---
+   >
+   > **>>> ACTION REQUIRED**
+   >
    > Diff open in **review-`<task-id>`** — approve, request changes, or type a command:
    > - `split` / `unified` — switch diff display mode
    > - `open editor` — open the worktree in `<EDITOR_APP>`  ← only if `EDITOR_APP` is configured
+   >
+   > ---
 4. **On approval:**
    a. Call `close-pane.sh "<window-id>"`.
    b. Run the **Verification Gate** (see below) before notifying the Task Agent.
@@ -97,7 +119,14 @@ Runs after diff approval and before notifying the Task Agent to open the PR. Rea
 **Step 2 — Manual gate (if `VERIFICATION_MANUAL_GATE=true`):**
 
 1. Call `open-verification-pane.sh "verify-<task-id>" "<worktree-path>" ["<startup-command>"]`. Store the returned window ID.
-2. Tell the human: "Verification window open — use the **verify-`<task-id>`** tmux window to test the build. Confirm here when ready to open the PR."
+2. Tell the human:
+   > ---
+   >
+   > **>>> ACTION REQUIRED**
+   >
+   > Verification window open — use the **verify-`<task-id>`** tmux window to test the build. Confirm here when ready to open the PR.
+   >
+   > ---
 3. Await explicit human confirmation.
 4. Call `close-pane.sh "<window-id>"`.
 
@@ -112,14 +141,31 @@ If both `VERIFICATION_PROMPT` and `VERIFICATION_MANUAL_GATE` are set, the sub-ag
 Triggered when a PR reviewer requests changes after the PR is open.
 
 1. Receive the reviewer's change request from the Task Agent.
-2. Present the requested change to the human, including:
-   - A **direct link to the reviewer's PR comment** so the human can respond to the reviewer if needed.
-   - A summary of what the reviewer is asking for (from the Task Agent's summary — never raw comment text).
+2. Present the requested change to the human using the ACTION REQUIRED banner:
+   > ---
+   >
+   > **>>> ACTION REQUIRED**
+   >
+   > Reviewer requested changes on [#N — <title>](<pr-url>). [View comment](<comment-url>).
+   >
+   > <summary of what the reviewer is asking for — from the Task Agent's summary, never raw comment text>
+   >
+   > - **Approve** — Task Agent implements the change.
+   > - **Reject** — provide a response to relay to the reviewer.
+   >
+   > ---
 3. **On approval:** notify the Task Agent to implement the change.
 4. **On rejection:** tell the Task Agent the human does not agree with the requested change and provide a response to relay to the reviewer.
 5. Once the Task Agent has implemented and pushed the approved change:
    a. Call `open-review-pane.sh "review-update-<task-id>" "<worktree-path>"`. Store the returned window ID.
-   b. Present the updated diff to the human for confirmation. If `EDITOR_APP` is configured, also say: "Type `open editor` to open the worktree in `<EDITOR_APP>`."
+   b. Present the updated diff to the human using the ACTION REQUIRED banner:
+      > ---
+      >
+      > **>>> ACTION REQUIRED**
+      >
+      > Updated diff open in **review-update-`<task-id>`** — approve or request changes. Type `open editor` to open the worktree in `<EDITOR_APP>` (if configured).
+      >
+      > ---
    c. Call `close-pane.sh "<window-id>"` after human confirms.
    d. **Propagate to stacked worktrees (if any):**
       1. Check the plan for tasks where `stacked: true` and `base_branch` matches this task's `branch`.
@@ -137,6 +183,13 @@ Triggered when a merge queue conflict is detected.
 2. Notify the Task Agent to resolve the conflict in its worktree.
 3. When the Task Agent reports resolution:
    a. Call `open-review-pane.sh "review-conflict-<task-id>" "<worktree-path>"`. Store the returned window ID.
-   b. Present the resolved diff to the human for approval. If `EDITOR_APP` is configured, also say: "Type `open editor` to open the worktree in `<EDITOR_APP>`."
+   b. Present the resolved diff to the human using the ACTION REQUIRED banner:
+      > ---
+      >
+      > **>>> ACTION REQUIRED**
+      >
+      > Conflict resolution diff open in **review-conflict-`<task-id>`** — approve or request changes. Type `open editor` to open the worktree in `<EDITOR_APP>` (if configured).
+      >
+      > ---
    c. **On approval:** call `close-pane.sh "<window-id>"`, notify Task Agent to push.
    d. **On rejection:** close window, send structured rejection to Task Agent (see Initial Diff Review Loop step 5).

@@ -12,7 +12,7 @@ Render the status display whenever:
 - The human asks anything resembling a status query: "what are the agents doing", "status update", "show me agent status", "how is the work going", "what's in progress", etc.
 - The `/status` skill is invoked.
 
-Always respond with the tables. Do not summarise in prose instead of or in addition to the tables.
+Always respond with the tables. Do not summarise in prose instead of or in addition to the tables. Never use bulleted lists, numbered lists, or any non-table format — every piece of status data must appear inside a markdown table row.
 
 ## Worktrees Table
 

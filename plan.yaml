@@ -5131,3 +5131,17 @@ tasks:
       bullet to orchestrating-agents/SKILL.md referencing the PR Link Rule.
       Update steps 7.5 and 9.5 messages to include PR URL.
 
+  - id: 102
+    name: visual-notification-banners
+    status: done
+    depends_on: []
+    description: >
+      Add visual banner styling to all human-facing notifications so important
+      events stand out in Claude Code's scrolling terminal output. Create
+      skills/NOTIFICATIONS.md defining four banner styles (ACTION REQUIRED,
+      INFORMATIONAL, WARNING, SUCCESS) using bold leader symbols, horizontal
+      rules, and markdown formatting. Update all notification templates in
+      orchestrating-agents/SKILL.md, PR_MONITORING.md, REVIEW.md,
+      CODE_REVIEW.md, and executing-tasks/SKILL.md to use the appropriate
+      banner style.
+

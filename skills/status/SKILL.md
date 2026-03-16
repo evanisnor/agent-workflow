@@ -3,7 +3,7 @@ name: status
 description: "Display a status table of all active worktrees, their agent state, current activity, and PR state. Invoke with /status."
 ---
 
-Render the status display immediately using the rules below. Do not read any external files. Do not summarise in prose instead of or in addition to the tables.
+Render the status display immediately using the rules below. Do not read any external files. Do not summarise in prose instead of or in addition to the tables. Never use bulleted lists, numbered lists, or any non-table format — every piece of status data must appear inside a markdown table row.
 
 ## Worktrees Table
 
