@@ -53,6 +53,7 @@ Render the status display immediately using the rules below. Do not read any ext
 | `interrupted` | Agent stopped; work was incomplete (no PR or PR is draft) |
 | `unattended` | Agent stopped; PR is open and in flight |
 | `escalation required` | CI fix limit exceeded or unrecoverable error |
+| `independent` | Worktree exists outside any Dispatch plan |
 
 ## Queued Table
 
@@ -74,15 +75,17 @@ Render below the Worktrees table when there are tasks without worktrees. Omit if
 | Title | `task.title` | Truncate to 30 chars if needed |
 | Status | Derived from dependencies | `ready` if all `depends_on` are `done`; `blocked on T-{id}` otherwise |
 
+**Independent worktrees:** Worktrees from `git worktree list` that are not referenced by any plan task (excluding the main worktree) appear in the Worktrees table with Task `—`, Agent `—`, Activity `independent`, and PR discovered via `gh pr list --head <branch>`. See STATUS.md § Independent Worktree Rows for full column definitions.
+
 ## Rendering Rules
 
-1. **Worktrees table row inclusion:** Every task with a worktree. Include recently merged tasks until cleanup. Sort: `active` → `monitoring` → `stopped` → `merged`.
+1. **Worktrees table row inclusion:** Every task with a worktree, plus all independent worktrees. Include recently merged tasks until cleanup. Sort: `active` → `monitoring` → `stopped` → `merged` → `independent`.
 
 2. **Queued section row inclusion:** `pending` tasks with all deps met (show as `ready`). `pending`/`blocked` tasks with unmet deps (show as `blocked on T-{id}`). Omit `cancelled` unless human asks for full view. Sort: `ready` → `blocked`.
 
-3. **Empty states:** If no worktrees exist and a plan is loaded, omit Worktrees header — show only Queued. If no queued tasks, omit the section.
+3. **Empty states:** If no plan worktrees exist but independent worktrees exist, still render the Worktrees table (independent rows only). If no worktrees of any kind exist and a plan is loaded, omit Worktrees header — show only Queued. If no queued tasks, omit the section.
 
-4. **No active plan:** display exactly:
+4. **No active plan:** If independent worktrees exist, render the Worktrees table (independent rows only) above the no-plan text. Then display:
    > No active plan. Here's what you can do:
    > - **Plan** — describe what you'd like to build and I'll decompose it into tasks
    > - **Implement** — point me at an existing plan file to start executing

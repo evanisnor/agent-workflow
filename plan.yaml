@@ -5051,3 +5051,10 @@ tasks:
     description: >
       Fix watch-review-requests.sh to work with bash 3.2 (macOS default). The script used `declare -A` associative arrays which require bash 4+. Replace with plain string variables and grep-based lookups that are fully compatible with bash 3.2.
 
+  - id: 95
+    name: surface-non-plan-worktrees
+    status: done
+    depends_on: [92]
+    description: >
+      Surface worktrees that exist outside any Dispatch plan as "independent" worktrees in the status display and startup greeting. Rename "untracked" terminology to "independent" throughout. Show independent worktrees in both the Worktrees status table and the concierge greeting with branch name and associated PR info. Update STATUS.md, skills/status/SKILL.md, and skills/orchestrating-agents/SKILL.md.
+

@@ -242,9 +242,7 @@ Shown instead of all other scenarios when `.dispatch.yaml` does not exist.
 >
 > If you'd like to proceed with plugin defaults right now, just give me an assignment and I'll get started. The main limitation is that plan storage will default to `~/plans` — make sure that directory exists and is a git repository.
 
-If untracked worktrees are detected (see Untracked Worktree Detection below), append:
-
-> Also: N worktree(s) not tracked by any plan exist in this repo. Dispatch only manages worktrees it creates.
+If independent worktrees are detected (see Independent Worktree Detection below), append the independent worktree listing.
 
 ### Scenario B: Active Plan (`in_progress` or `pending` tasks exist)
 
@@ -259,7 +257,7 @@ Then the bullet summary (each line omitted if its count is zero, rendered in thi
 
 Then exactly one recommendation (see Recommendation Priority Table below).
 
-Then the untracked worktree note if applicable (see Untracked Worktree Detection below).
+Then the independent worktree listing if applicable (see Independent Worktree Detection below).
 
 ### Scenario C: Completed Plan (all tasks `done`, `cancelled`, or `failed`)
 
@@ -289,7 +287,7 @@ Then:
 >
 > Also available: `/status`, `/config`, `/help`
 
-If untracked worktrees are detected, append the untracked worktree note (see below).
+If independent worktrees are detected, append the independent worktree listing (see Independent Worktree Detection below).
 
 ### Recommendation Priority Table
 
@@ -307,18 +305,23 @@ In Scenario B, select exactly one recommendation — the first matching conditio
 
 Derive counts from reconciliation results and the loaded plan:
 
-- **Worktrees:** Count tasks with `worktree` set in the plan. N = total worktrees. M = worktrees where Agent is `stopped` (per STATUS.md Agent Values).
+- **Worktrees:** Count ALL non-main worktrees from `git worktree list`. N = total worktrees. M = worktrees where Agent is `stopped` (per STATUS.md Agent Values). If independent worktrees exist, note them in the count: e.g. `3 worktree(s) active, 1 with stopped agents (1 independent)`.
 - **PRs:** Count tasks with `pr_url` set and PR state is open. K = total open PRs. J = PRs with activity `awaiting review`. L = PRs with activity `in merge queue`.
 - **Queued:** Count tasks with `status: pending` and no `worktree` set. P = total queued. Q = those with all `depends_on` done (i.e. `ready` per STATUS.md Queued section).
 - **Reviews:** Count entries in the pending reviews list with `status: ready`. R = that count.
 
-### Untracked Worktree Detection
+### Independent Worktree Detection
 
-Run `git worktree list --porcelain` and collect all worktree paths. Subtract the main worktree (first entry) and all paths referenced by any plan task's `worktree` field. If any remain:
+Run `git worktree list --porcelain` and collect all worktree paths. Subtract the main worktree (first entry) and all paths referenced by any plan task's `worktree` field. The remaining worktrees are **independent** — they exist outside any Dispatch plan.
 
-> Also: N worktree(s) not tracked by any plan exist in this repo.
+If any independent worktrees exist, output a compact listing:
 
-This note appears last in every scenario where it is applicable (A, B, D). In Scenario C it is omitted (completed plans have no active worktrees to track).
+> **Independent worktrees:** N worktree(s) outside the current plan.
+> - `branch-name` — #N or `no PR`
+
+For each independent worktree, discover the branch name from `git worktree list --porcelain` (strip `refs/heads/` from the `branch` ref) and check for an associated PR via `gh pr list --head <branch> --json number,url --jq '.[0]'`. Render `#N` (linked) if a PR is found, `no PR` if not.
+
+This listing appears last in every scenario where it is applicable (A, B, D). In Scenario C it is omitted (completed plans have no active worktrees to track). These worktrees also appear in the full status table — see STATUS.md § Independent Worktree Rows.
 
 ### Determinism Rule
 

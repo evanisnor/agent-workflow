@@ -64,6 +64,7 @@ Derived by the Orchestrating Agent from plan state and live PR/CI context. Use t
 | `interrupted` | Agent stopped; work was incomplete (no PR, or PR is still draft) |
 | `unattended` | Agent stopped; PR is open and in flight |
 | `escalation required` | CI fix limit exceeded, unrecoverable error, or worktree path not registered |
+| `independent` | Worktree exists outside any Dispatch plan |
 
 ### Stopped-Agent Activity Derivation
 
@@ -72,6 +73,20 @@ When `TaskGet(agent_id)` returns `failed` or `stopped` for a task with `worktree
 1. If `task.pr_url` is set and the PR is open (not draft): **`unattended`**
 2. Otherwise: **`interrupted`**
 3. Verify the worktree path is registered via `git worktree list --porcelain`. If the path is not found, use **`escalation required`** instead.
+
+### Independent Worktree Rows
+
+Worktrees that exist on disk (per `git worktree list --porcelain`) but are not referenced by any plan task's `worktree` field are **independent worktrees**. For each independent worktree (excluding the main worktree):
+
+| Column | Value |
+|--------|-------|
+| Branch | From `git worktree list --porcelain` (`branch` ref, strip `refs/heads/`). Rendered as inline code. |
+| Task | `—` |
+| Agent | `—` |
+| Activity | `independent` |
+| PR | Run `gh pr list --head <branch> --json number,url --jq '.[0]'`. Render `#N` linked if found, `—` if not. |
+
+Independent rows sort **after** all plan rows (after the `merged` group).
 
 ## Queued Table
 
@@ -129,9 +144,9 @@ Render this section **below the Queued table** (or below the Worktrees table if 
 
 ### Worktrees table
 
-1. **Row inclusion:** Every task with `worktree` set in the plan. Include `done` tasks from the current session briefly (with `merged` activity) until the worktree is cleaned up.
-2. **Sort order:** `active` → `monitoring` → `stopped` → `merged`.
-3. **Empty state:** If no worktrees exist and a plan is loaded, omit the Worktrees section header — only show Queued.
+1. **Row inclusion:** Every task with `worktree` set in the plan, plus all independent worktrees (see Independent Worktree Rows above). Include `done` tasks from the current session briefly (with `merged` activity) until the worktree is cleaned up.
+2. **Sort order:** `active` → `monitoring` → `stopped` → `merged` → `independent`.
+3. **Empty state:** If no plan worktrees exist but independent worktrees exist, still render the Worktrees table (with only independent rows). If no worktrees of any kind exist and a plan is loaded, omit the Worktrees section header — only show Queued.
 
 ### Queued section
 
@@ -148,7 +163,11 @@ Render this section **below the Queued table** (or below the Worktrees table if 
 
 ### No active plan
 
-If no plan is loaded, display exactly:
+If no plan is loaded and independent worktrees exist, render the Worktrees table (independent rows only) followed by:
+
+> No active plan. Give me an assignment to get started.
+
+If no plan is loaded and no independent worktrees exist, display exactly:
 
 > No active plan. Give me an assignment to get started.
 
