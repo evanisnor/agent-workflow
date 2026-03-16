@@ -155,6 +155,9 @@ fi
 export KNOWLEDGE_MAX_LOAD_ENTRIES
 KNOWLEDGE_MAX_LOAD_ENTRIES="$(_cfg '.knowledge.max_load_entries' '.knowledge.max_load_entries // ""' '30')"
 
+export EDITOR_APP
+EDITOR_APP="$(_cfg '.editor.app' '.defaults.editor_app' '')"
+
 # Helper: check whether the plan repo has a remote named 'origin'
 _has_remote() {
   git -C "${PLAN_REPO}" remote get-url origin &>/dev/null

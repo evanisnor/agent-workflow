@@ -17,3 +17,4 @@ defaults:
   verification_prompt: ""
   issue_tracking_prompt: ""
   code_review_prompt: ""
+  editor_app: ""

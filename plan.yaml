@@ -4152,3 +4152,68 @@ tasks:
       worktrees using rebase-stacked-worktrees.sh, notify rebased Task Agents on success,
       handle conflicts, and resume the review loop.
 
+  - id: 83
+    name: editor-open-config
+    status: done
+    depends_on: []
+    description: >
+      Add editor open configuration to the plugin.
+
+      In scripts/config.sh, add an EDITOR_APP export using _cfg:
+        export EDITOR_APP
+        EDITOR_APP="$(_cfg '.editor.app' '.defaults.editor_app' '')"
+
+      In settings.yaml, add to the defaults section:
+        editor_app: ""
+
+      In .dispatch.example.yaml, add a new top-level editor section after the diff section:
+        editor:
+          app: ""  # App display name or CLI command for opening worktrees during review.
+                   # macOS: use the app's display name (e.g. "Cursor", "Xcode", "Visual Studio Code").
+                   # Any platform: use the CLI command name if the editor installs one (e.g. "code", "cursor").
+                   # Leave empty to disable the editor open option.
+
+  - id: 84
+    name: open-in-editor-script
+    status: todo
+    depends_on: [83]
+    description: >
+      Create skills/orchestrating-agents/scripts/open-in-editor.sh.
+
+      Usage: open-in-editor.sh <worktree-path>
+
+      The script should:
+      1. Source config.sh to read EDITOR_APP.
+      2. Validate that <worktree-path> argument is provided and exists.
+      3. Exit 1 with a clear error if EDITOR_APP is empty.
+      4. Try the value as a CLI command first: if command -v "$EDITOR_APP" succeeds, run
+         "$EDITOR_APP" "$WORKTREE_PATH" and exit 0.
+      5. On macOS (uname == Darwin), try: open -a "$EDITOR_APP" "$WORKTREE_PATH" and exit 0 on success.
+      6. Exit 1 with a message: "editor '$EDITOR_APP' not found as a command or macOS app".
+
+  - id: 85
+    name: editor-open-review-instructions
+    status: todo
+    depends_on: [84]
+    description: >
+      Update skills/orchestrating-agents/REVIEW.md to support opening the worktree in an editor
+      during diff review.
+
+      Add a new "Open in Editor" section after the "Diff Mode Toggle" section and before the
+      "Initial Diff Review Loop" section:
+
+        ## Open in Editor
+
+        At any point during a diff review, if EDITOR_APP is configured, the human can respond
+        with "open editor". When this happens:
+        1. Call open-in-editor.sh "<worktree-path>".
+        2. Confirm to the human: "Worktree opened in <EDITOR_APP>."
+        3. Continue the review loop from the same step — the diff window stays open.
+
+      In the Initial Diff Review Loop step 3, append to the human prompt (only if EDITOR_APP
+      is set): 'Type "open editor" to open the worktree in <EDITOR_APP>.'
+
+      Apply the same inline offer in the Reviewer-Requested Change Review Loop step 5b and
+      in the Merge Conflict Review Loop step 3a — anywhere open-review-pane.sh is called and
+      the human is asked to review a diff.
+

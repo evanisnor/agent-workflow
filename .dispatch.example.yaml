@@ -24,6 +24,12 @@ sandbox:
 diff:
   mode: split
 
+editor:
+  app: ""  # App display name or CLI command for opening worktrees during review.
+           # macOS: use the app's display name (e.g. "Cursor", "Xcode", "Visual Studio Code").
+           # Any platform: use the CLI command name if the editor installs one (e.g. "code", "cursor").
+           # Leave empty to disable the editor open option.
+
 pr:
   template_path: ""
   description_prompt: ""  # optional: prompt (or "/skill-name") for PR body authoring
