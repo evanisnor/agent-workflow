@@ -3409,3 +3409,19 @@ tasks:
     status: done
     depends_on: []
     description: Standardize all project config files on YAML + yq. Convert settings.json and .dispatch.example.json to YAML, update scripts/config.sh to use yq, update documentation.
+  - id: 67
+    name: flexible-plan-yaml-scripts
+    status: in_progress
+    depends_on: []
+    description: >
+      Remove save-plan.sh and load-plan.sh. Create skills/planning-tasks/PLAN_STORAGE.md with
+      write-with-lock pattern and structure introspection rules. Update PLANNING.md to replace the
+      hardcoded epic: schema with a flexible envelope section that mirrors the issue tracker hierarchy.
+  - id: 68
+    name: flexible-plan-yaml-skill-updates
+    status: pending
+    depends_on: [67]
+    description: >
+      Update all skill files to remove save-plan.sh/load-plan.sh references and add
+      structure-awareness. Updates: planning-tasks/SKILL.md, orchestrating-agents/SKILL.md,
+      executing-tasks/SKILL.md, planning-tasks/ISSUE_TRACKING.md.

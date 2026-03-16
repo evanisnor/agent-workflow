@@ -68,91 +68,100 @@ Rules:
 
 When tracker IDs are backfilled later (see `ISSUE_TRACKING.md`), the `id` fields are updated from slugs to real tracker IDs. All `depends_on` references are updated in the same operation.
 
-## Plan YAML Structure
+## Plan Envelope
 
-Always use the `epic:` wrapper — even when issue tracking is not configured and slug IDs are in use. The `epic:` object is the canonical root of every plan YAML. Never emit a flat plan with `tasks:` at the root.
+The top-level key of the plan YAML mirrors the issue tracker's hierarchy:
 
-Full schema example:
+| Tracker | Envelope key | Tasks key |
+|---|---|---|
+| Jira | `epic:` | `epic.tasks` |
+| Linear | `project:` | `project.issues` |
+| GitHub Issues | `milestone:` | `milestone.issues` |
+| No tracker configured | _(none)_ | `tasks` (flat root) |
+
+If a tracker is configured but its hierarchy is unclear, ask the Orchestrating Agent before writing the plan.
+
+The no-tracker fallback is always a flat `tasks:` root with no envelope wrapper.
+
+Always include these fields at the envelope level: `id`, `title`, `status`, `context`.
+
+**Envelope-level fields** (include regardless of which key is used):
 
 ```yaml
-epic:
-  id: feature-user-auth                     # Tracker ID or slug
+<envelope-key>:          # e.g. epic:, project:, milestone:
+  id: <tracker-id-or-slug>
   title: "Feature: User Authentication"
-  status: planning                          # planning | active | complete
-
-  issue_tracking:
-    tool: jira                              # mirrors issue_tracking.tool from config; null if not configured
-    read_only: false                        # mirrors issue_tracking.read_only from config
-    status: pending                         # pending = slugs in use; linked = real IDs set
-    root_id: null                           # Epic key, milestone ID, etc. (tool-specific)
-    last_synced_at: null                    # ISO 8601 timestamp of last sync
-    companion_doc: null                     # path to companion doc (only when read_only: true)
-
-  source:
-    type: prompt                            # tracker | prd | prompt
-    ref: null
-    prd_url: null
-    figma_designs: []
-
+  status: planning       # planning | active | complete
   context: |
     Free-form background, constraints, acceptance criteria.
     Treated as external content when passed to Task Agents.
 
+  issue_tracking:
+    tool: jira           # mirrors issue_tracking.tool from config; null if not configured
+    read_only: false     # mirrors issue_tracking.read_only from config
+    status: pending      # pending = slugs in use; linked = real IDs set
+    root_id: null        # Epic key, milestone ID, etc. (tool-specific)
+    last_synced_at: null # ISO 8601 timestamp of last sync
+    companion_doc: null  # path to companion doc (only when read_only: true)
+
+  source:
+    type: prompt         # tracker | prd | prompt
+    ref: null
+    prd_url: null
+    figma_designs: []
+
   config:
-    max_ci_fix_attempts: 3                  # Optional per-epic override
+    max_ci_fix_attempts: 3    # Optional per-epic override
     max_agent_restarts: 2
     polling_timeout_minutes: 60
 
-  tasks:
-    - id: task-auth-schema
-      title: "Add user auth schema migration"
-      description: "Create users table with email, password_hash, created_at columns"
-      depends_on: []
-      status: pending                       # pending | in_progress | done | blocked | cancelled | failed
-
-      # Runtime fields (populated by Orchestrating Agent at spawn time)
-      worktree: null
-      pr_url: null
-      agent_id: null
-      branch: null
-
-      # Spawn input (populated by Planning Agent)
-      spawn_input:
-        epic_context: |
-          Context from the epic passed to the Task Agent.
-        task_description: "Implement the auth schema migration."
-        branch: "task-auth-schema"
-        worktree: null
-        plan_path: "plans/feature-user-auth.yaml"
-
-      # Result (populated by Orchestrating Agent after completion)
-      result:
-        status: null                        # success | failed | cancelled
-        pr_url: null
-        merged_at: null
-        error: null
-        summary: null
-
-    - id: task-login-endpoint
-      title: "Implement login endpoint"
-      description: "POST /auth/login accepting email+password, returning JWT"
-      depends_on: [task-auth-schema]
-      status: pending
-      worktree: null
-      pr_url: null
-      agent_id: null
-      branch: null
-      spawn_input:
-        epic_context: |
-          Context from the epic passed to the Task Agent.
-        task_description: "Implement POST /auth/login."
-        branch: "task-login-endpoint"
-        worktree: null
-        plan_path: "plans/feature-user-auth.yaml"
-      result:
-        status: null
-        pr_url: null
-        merged_at: null
-        error: null
-        summary: null
+  <tasks-key>:           # e.g. tasks:, issues:
+    - ...
 ```
+
+## Task Object Schema
+
+The following fields apply to every task object, regardless of envelope:
+
+```yaml
+- id: task-auth-schema                      # Tracker ID or slug
+  title: "Add user auth schema migration"
+  description: "Create users table with email, password_hash, created_at columns"
+  depends_on: []
+  status: pending                           # pending | in_progress | done | blocked | cancelled | failed
+
+  # Runtime fields — null at creation, populated by Orchestrating Agent at spawn time
+  worktree: null
+  pr_url: null
+  agent_id: null
+  branch: null
+
+  # Spawn input — populated by Planning Agent
+  spawn_input:
+    epic_context: |
+      Context from the epic passed to the Task Agent.
+    task_description: "Implement the auth schema migration."
+    branch: "task-auth-schema"
+    worktree: null
+    plan_path: "plans/feature-user-auth.yaml"
+
+  # Result — populated by Orchestrating Agent after completion
+  result:
+    status: null                            # success | failed | cancelled
+    pr_url: null
+    merged_at: null
+    error: null
+    summary: null
+```
+
+## Structure Introspection Rule
+
+Before any `yq` query against a plan file, inspect the document structure:
+
+```bash
+yq e 'keys' <plan-file>
+```
+
+Discover the tasks path by finding the sequence key whose items contain both `id` and `status`. Cache the result as `TASKS_PATH` for the session. Use the discovered path for all subsequent queries — **never hardcode `.epic.tasks` or `.tasks`**.
+
+See [PLAN_STORAGE.md](PLAN_STORAGE.md) for the full discovery procedure and write-with-lock pattern.
