@@ -20,6 +20,16 @@ All project config files use YAML format (not JSON). Use `yq` for all config rea
 - Never add `jq` invocations for reading project config — use `yq e '...' file.yaml` instead.
 - Exception: `gh` CLI output and GitHub API queries remain in JSON/jq — GitHub returns JSON only. `--jq` flags on `gh` commands are correct and should not be changed.
 
+## Shell Compatibility: bash 3.2
+
+All shell scripts must be compatible with bash 3.2 (the macOS system default). Do not use bash 4+ features:
+
+- No associative arrays (`declare -A`)
+- No `readarray` / `mapfile`
+- No `${var,,}` / `${var^^}` case conversion
+- No `|&` (pipe stderr)
+- No negative array indexing (`${arr[-1]}`)
+
 ## Architecture
 
 ### Three-Agent System
