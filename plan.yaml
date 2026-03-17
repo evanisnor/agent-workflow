@@ -5395,7 +5395,7 @@ tasks:
 
   - id: 125
     name: enhance-startup-integrity-and-plan-update-rule
-    status: pending
+    status: done
     depends_on: [121]
     description: >
       Enhance Startup Reconciliation integrity check with ID consistency and

@@ -280,6 +280,16 @@ On every startup, before resuming work:
 
    Do **not** inspect git history, run git commands, or attempt any further reconciliation on a corrupted plan.
 
+   After passing the basic integrity check, run these additional non-blocking validations:
+
+   c. **ID consistency.** If `issue_tracking.status` is `linked`, scan all task IDs. Flag any task whose `id` matches a slug pattern (all-lowercase-and-hyphens with no digits, e.g. `add-login-page`) as a warning:
+      > **-- Warning:** Task `<id>` has a slug-pattern ID but issue tracking status is `linked`. This may indicate a failed ID backfill. Verify tracker IDs before proceeding.
+
+      This is a warning, not a blocking error — plans with `issue_tracking.status: pending` legitimately have slug IDs.
+
+   d. **Dependency references.** For each task, verify every entry in `depends_on` matches an existing task `id` in the plan. Flag any orphaned references:
+      > **-- Warning:** Task `<id>` depends on `<missing-id>` which does not exist in the plan.
+
 3. For each task with `status: in_progress`:
    a. Check whether `branch` exists: `git branch -r | grep <branch>`
    b. Check whether an open PR exists: `gh pr list --head <branch> --json url --jq '.[0].url'`. If a PR is found and the task's `pr_url` is null or empty, record the discovered URL for backfill in step 4.
@@ -489,14 +499,28 @@ When the human asks for a status update — in any phrasing — render the workt
 
 ## Plan Update Rule
 
-**Never construct plan YAML from memory or scratch. Never reconstruct the full document.** The only safe pattern is: inspect structure → patch in-place → commit per [PLAN_STORAGE.md](../planning-tasks/PLAN_STORAGE.md).
+**Never construct plan YAML from memory or scratch. Never reconstruct the full document.**
+
+**Preferred: use `plan-update.sh`** (located in `scripts/` under the plugin root) for all single-task field updates. It discovers the tasks path, applies the patch, and performs mandatory read-back validation:
+
+```bash
+<plugin-root>/scripts/plan-update.sh <plan-file> <task-id> status done
+# Exit 0 + "OK: status=done" = verified
+# Exit 1 = task not found or value mismatch — investigate
+# Exit 2 = structure error
+# Commit per PLAN_STORAGE.md write-with-lock pattern
+```
+
+**Fallback: manual yq + read-back.** If `plan-update.sh` is unavailable or the update requires a non-string value or multi-field atomic write:
 
 ```bash
 # Discover the tasks path once per session
-# Probe top-level keys; find the sequence with id+status items
-yq e 'keys' <plan-file>
-# Then patch in-place using the discovered TASKS_PATH
+TASKS_PATH=$(<plugin-root>/scripts/discover-tasks-path.sh <plan-file>)
+# Patch in-place
 yq e -i "($TASKS_PATH[] | select(.id == \"<task-id>\")).status = \"done\"" <plan-file>
+# MANDATORY: read back and verify the write took effect
+ACTUAL=$(yq e "($TASKS_PATH[] | select(.id == \"<task-id>\")).status" <plan-file>)
+# If ACTUAL != "done", the update silently failed — investigate before proceeding
 # Commit per PLAN_STORAGE.md write-with-lock pattern
 ```
 
