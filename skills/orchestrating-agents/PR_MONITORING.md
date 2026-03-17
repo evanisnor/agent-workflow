@@ -50,7 +50,7 @@ Per-epic overrides in `epic.config.*` take precedence over these defaults.
      > |---|
      > | **Task:** T-{id}: {task_title} |
      > | {pr_url} |
-   - **Exit 1 (changes requested) or Exit 2 (CI failure):** escalate to the human:
+   - **Exit 1 (changes requested), Exit 5 (reviewer comments), or Exit 2 (CI failure):** escalate to the human:
      > ---
      >
      > **>>> ACTION REQUIRED**
@@ -70,7 +70,7 @@ Per-epic overrides in `epic.config.*` take precedence over these defaults.
    - **Exit 4 (still in progress):** no action.
 
    For tasks with an `agent_id` set, handle exit codes as follows:
-3. On **CI failure** (exit 2): look up the Task Agent's `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'` with CI failure details (wrapped in `<external_content>` tags): "CI failed — begin CI fix loop per CI_FEEDBACK.md." Track the attempt count against `MAX_CI_FIX_ATTEMPTS`. On breach, escalate to human:
+3. On **CI failure** (exit 2): look up the Task Agent's `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'` with CI failure details (wrapped in `<external_content>` tags): "CI failed — begin CI fix loop per CI_FEEDBACK.md." Track the attempt count against `MAX_CI_FIX_ATTEMPTS`. If a `pending_re_review` record exists for this PR, preserve it — the re-request will fire after CI is fixed and passes (see exit 4 handling above). On breach, escalate to human:
    > ---
    >
    > **!!! WARNING**
@@ -87,9 +87,20 @@ Per-epic overrides in `epic.config.*` take precedence over these defaults.
    > - **Abandon** — cancel the task and flag dependents blocked.
    >
    > ---
-4. On **changes requested** (exit 1): begin the reviewer-requested change review loop in [REVIEW.md](REVIEW.md).
+4. On **changes requested** (exit 1): begin the reviewer-requested change review loop in [REVIEW.md](REVIEW.md), passing reviewer username(s) from the summary.
+4a. On **reviewer comments** (exit 5): begin the reviewer-requested change review loop in [REVIEW.md](REVIEW.md), passing reviewer username(s) from the summary. Same treatment as exit 1.
 5. On **approved + CI passing** (exit 0): look up the Task Agent's `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'`: "PR approved and CI passing — call `add-to-merge-queue.sh`."
-6. On **still in progress** (exit 4): no action. If a `TIMEOUT` line appears in stdout, escalate to human with the PR URL and elapsed time.
+6. On **still in progress** (exit 4): If the OA has a `pending_re_review` record for this PR and the summary shows `ci_green=true`:
+   - Check if `review` is `APPROVED` → the reviewer approved while CI was running. Clear `pending_re_review`. The next poll cycle will return exit 0 and proceed to merge queue normally.
+   - If `review` is not `APPROVED` → call `request-re-review.sh <pr_url> <reviewer>` for each tracked reviewer. Clear `pending_re_review`. Notify the human:
+     > **-- Re-review requested:** CI is passing. Asked @{reviewer_username} to review the updated changes.
+     >
+     > | #{number} — {title} |
+     > |---|
+     > | **Task:** T-{id}: {task_title} |
+     > | {pr_url} |
+
+   If `ci_green=false` or no `pending_re_review` exists, no action. If a `TIMEOUT` line appears in stdout, escalate to human with the PR URL and elapsed time.
 7. On **PR closed/merged** (exit 3): update task status accordingly.
 
 ## Merge Queue Monitoring
@@ -289,6 +300,18 @@ INFORMATIONAL notification:
 
 Set activity to `changes requested`.
 
+### Reviewer comments (exit 5)
+
+INFORMATIONAL notification:
+
+> **-- Reviewer commented:** Reviewer left comments on independent PR.
+>
+> | #{number} — {title} |
+> |---|
+> | {pr_url} |
+
+Set activity to `reviewer commented`.
+
 ### CI failure (exit 2)
 
 INFORMATIONAL notification:
@@ -340,6 +363,7 @@ Map `check-pr-status.sh` exit codes to activity values:
 | 2 | `CI failed` |
 | 3 | `merged` or `closed` (inspect output) |
 | 4 | Inspect stdout: if CI state is `PENDING` or `IN_PROGRESS` → `CI running`; otherwise → `awaiting review` |
+| 5 | `reviewer commented` |
 
 ## Independent PR Merge Queue Monitoring
 

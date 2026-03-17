@@ -5423,3 +5423,14 @@ tasks:
       safety net. The SKILL.md recovery block at the document top survives
       partial compaction and directs the agent to re-read its full instructions.
 
+  - id: 128
+    name: detect-reviewer-comments-and-re-request-reviews
+    status: done
+    depends_on: [127]
+    description: >
+      Add per-reviewer review tracking to check-pr-status.sh with exit 5 for
+      COMMENTED reviews, create request-re-review.sh for deferred re-review
+      requests after CI passes, update PR_MONITORING.md/REVIEW.md/Polling Agent
+      SKILL.md/STATUS.md/NOTIFICATIONS.md with exit 5 handling and
+      pending_re_review flow. Fixes stale CHANGES_REQUESTED re-fire bug.
+

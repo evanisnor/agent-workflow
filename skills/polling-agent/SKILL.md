@@ -62,6 +62,10 @@ A result is **reportable** if:
 - Exit code is not 4 (still in progress with no changes), OR
 - A `TIMEOUT` line appears in stdout
 
+Exit 5 (reviewer comments) is reportable alongside exit codes 0-3.
+
+The `reviewers` field in `PR_STATUS_CHANGES` is populated from check script stdout for exit 1 and 5 (parsed from "changes requested by ..." or "reviewer comments from ..."). Empty for other exit codes.
+
 ### Step 5: Check merge queue
 
 For each PR that is in the merge queue (both plan-tracked and independent), run `check-merge-queue.sh <pr-url>` (located in `scripts/` under the plugin root). Capture exit code and stdout.
@@ -107,7 +111,7 @@ POLLING_REPORT
 REVIEW_EVENTS:
 - type: <NEW_REVIEW_REQUEST|REVIEW_REMOVED> pr_url: <url> pr_number: <n> title: <t> author: <a>
 PR_STATUS_CHANGES:
-- task_id: <id> pr_url: <url> exit_code: <n> summary: <one-line> agentless: <bool>
+- task_id: <id> pr_url: <url> exit_code: <n> summary: <one-line> agentless: <bool> reviewers: <space-separated usernames>
 MERGE_QUEUE_CHANGES:
 - task_id: <id> pr_url: <url> exit_code: <n> summary: <one-line>
 AGENT_LIVENESS:

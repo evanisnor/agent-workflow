@@ -343,7 +343,7 @@ On every startup, before resuming work:
 
       - **Exit 4 + `draft=true`:** Agent has unfinished work. Fall through to step 6b.
 
-      - **Exit 1 or 2:** fall through to step 6b.
+      - **Exit 1, 2, or 5:** fall through to step 6b.
 
    b. **Otherwise** (no `pr_url`, or non-terminal exit code), escalate to the human:
       > ---

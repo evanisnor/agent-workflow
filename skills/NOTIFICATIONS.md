@@ -84,6 +84,7 @@ Rendering rules:
 | Diff review (approve/reject) | ACTION REQUIRED | REVIEW.md |
 | Verification gate | ACTION REQUIRED | REVIEW.md |
 | Reviewer-requested change | ACTION REQUIRED | REVIEW.md |
+| Reviewer commented (plan-tracked) | ACTION REQUIRED | REVIEW.md |
 | Conflict resolution review | ACTION REQUIRED | REVIEW.md |
 | Diff open for incoming review | ACTION REQUIRED | CODE_REVIEW.md |
 | CI passing — schedule readiness | ACTION REQUIRED | executing-tasks/SKILL.md |
@@ -96,6 +97,7 @@ Rendering rules:
 | Startup greetings (Scenarios A–D) | INFORMATIONAL | SKILL.md |
 | Stacking explanation | INFORMATIONAL | SKILL.md |
 | Stalled reviewer comment | INFORMATIONAL | PR_MONITORING.md |
+| Re-review requested (CI passing) | INFORMATIONAL | PR_MONITORING.md |
 | PR auto-advanced (orphaned agent) | INFORMATIONAL | PR_MONITORING.md |
 | CI fix exhausted | WARNING | PR_MONITORING.md |
 | Merge queue ejection | WARNING | PR_MONITORING.md |
@@ -110,6 +112,7 @@ Rendering rules:
 | Ready for new assignment | SUCCESS | SKILL.md |
 | Independent PR approved + CI passing | ACTION REQUIRED | PR_MONITORING.md |
 | Independent PR changes requested | INFORMATIONAL | PR_MONITORING.md |
+| Independent PR reviewer commented | INFORMATIONAL | PR_MONITORING.md |
 | Independent PR CI failed | INFORMATIONAL | PR_MONITORING.md |
 | Independent PR merged | SUCCESS | PR_MONITORING.md |
 | Independent PR closed | INFORMATIONAL | PR_MONITORING.md |

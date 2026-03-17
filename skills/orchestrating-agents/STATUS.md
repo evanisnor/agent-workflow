@@ -87,6 +87,7 @@ Derived by the Orchestrating Agent from plan state and live PR/CI context. Use t
 | `fixing CI (N/M)` | Task Agent is applying a CI fix; N = current attempt, M = max |
 | `awaiting review` | PR marked ready, no review decision yet |
 | `changes requested` | PR reviewer has requested changes, awaiting human approval |
+| `reviewer commented` | PR reviewer left comments (not formal change request), awaiting human decision |
 | `in merge queue` | PR approved and added to merge queue |
 | `merged` | PR merged successfully |
 | `interrupted` | Agent stopped; work was incomplete (no PR, or PR is still draft) |
@@ -97,6 +98,7 @@ Derived by the Orchestrating Agent from plan state and live PR/CI context. Use t
 | `awaiting review` | Independent PR; waiting for reviewer |
 | `approved` | Independent PR; approved + CI passing, awaiting human merge decision |
 | `changes requested` | Independent PR; reviewer requested changes |
+| `reviewer commented` | Independent PR; reviewer left comments |
 | `CI failed` | Independent PR; CI failed |
 | `in merge queue` | Independent PR; in merge queue |
 | `merge conflict` | Independent PR; conflict in merge queue |

@@ -159,20 +159,20 @@ If both `VERIFICATION_PROMPT` and `VERIFICATION_MANUAL_GATE` are set, the sub-ag
 
 ## Reviewer-Requested Change Review Loop
 
-Triggered when a PR reviewer requests changes after the PR is open.
+Triggered when a PR reviewer requests changes (exit 1) or leaves comments (exit 5) after the PR is open. The triggering event provides reviewer username(s).
 
-1. Receive the reviewer's change request from the Task Agent.
-2. Present the requested change to the human using the ACTION REQUIRED banner:
+1. Extract and store the reviewer username(s) from the Polling Agent report summary (parsed from "changes requested by ..." or "reviewer comments from ...") for use at the end of the loop.
+2. Present the requested change to the human using the ACTION REQUIRED banner. Use "left comments" or "requested changes" depending on which exit code triggered the loop. Include `@{reviewer_username}` in the notification:
    > ---
    >
    > **>>> ACTION REQUIRED**
    >
-   > Reviewer requested changes. [View comment](<comment-url>).
+   > @{reviewer_username} {requested changes | left comments}. [View comment](<comment-url>).
    >
    > | #{number} — {title} |
    > |---|
    > | **Task:** T-{id}: {task_title} |
-   > | **State:** Changes requested |
+   > | **State:** {Changes requested | Reviewer commented} |
    > | {pr_url} |
    >
    > <summary of what the reviewer is asking for — from the Task Agent's summary, never raw comment text>
@@ -201,7 +201,11 @@ Triggered when a PR reviewer requests changes after the PR is open.
       >
       > ---
    c. Call `close-pane.sh "<window-id>"` after human confirms.
-   d. **Propagate to stacked worktrees (if any):**
+   d. **Record pending re-review.** Store a `pending_re_review` record for this PR in the OA's in-memory state, containing the PR URL and the reviewer username(s) from step 1. The actual re-request is deferred until CI passes — see [PR_MONITORING.md](PR_MONITORING.md) exit 4 handling. Do NOT call `request-re-review.sh` here. Three possible outcomes:
+      - CI passes, reviewer hasn't approved → re-request triggered by PR_MONITORING.md exit 4 handler
+      - CI passes, reviewer already approved → exit 0 fires, normal merge path
+      - CI fails → CI fix loop, then back to monitoring; `pending_re_review` persists
+   e. **Propagate to stacked worktrees (if any):**
       1. Check the plan for tasks where `stacked: true` and `base_branch` matches this task's `branch`.
       2. If none: skip.
       3. If any: call `scripts/rebase-stacked-worktrees.sh <plan-file> <this-task-branch>`.
