@@ -5317,3 +5317,41 @@ tasks:
       checks to skip agentless tasks. Update STATUS.md to omit Agent label for
       adopted tasks. Add notification row to NOTIFICATIONS.md.
 
+  - id: 117
+    name: create-polling-agent-skill
+    status: done
+    depends_on: []
+    description: >
+      Create the Polling Agent skill file at skills/polling-agent/SKILL.md.
+      This is a read-only background agent that polls GitHub for PR/review/merge-queue
+      status changes and reports them to the Orchestrating Agent via structured
+      POLLING_REPORT messages. Includes loop workflow, structured report format,
+      and hard constraints.
+
+  - id: 118
+    name: add-polling-interval-config
+    status: done
+    depends_on: []
+    description: >
+      Add polling_interval_minutes config to settings.yaml, scripts/config.sh,
+      .dispatch.example.yaml, and skills/config/SKILL.md. Default value is 5 minutes.
+
+  - id: 119
+    name: rewrite-skill-md-activity-polling
+    status: done
+    depends_on: [117, 118]
+    description: >
+      Rewrite Section 7 (Activity Polling) of skills/orchestrating-agents/SKILL.md
+      to spawn a Polling Agent instead of running inline checks. Add health check
+      cron job at */10. Update Authority Matrix, Startup Reconciliation, and
+      Startup Greeting references.
+
+  - id: 120
+    name: update-pr-monitoring-overview
+    status: done
+    depends_on: [119]
+    description: >
+      Update the Overview section of skills/orchestrating-agents/PR_MONITORING.md
+      to reflect that checks are now run by the Polling Agent in the background
+      and reported via structured POLLING_REPORT messages.
+

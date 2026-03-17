@@ -210,6 +210,17 @@ How long (in minutes) watch scripts and liveness checks poll before timing out a
 
 ---
 
+### `defaults.polling_interval_minutes`
+
+| | |
+|---|---|
+| Type | `integer` |
+| Default | `5` |
+
+How often (in minutes) the Polling Agent checks GitHub for PR, review, and merge queue status changes. Lower values increase responsiveness but use more API calls.
+
+---
+
 ## Setup Mode
 
 Walk the user through creating or updating `.dispatch.yaml`, then ensure `.claude/settings.json` is configured:
