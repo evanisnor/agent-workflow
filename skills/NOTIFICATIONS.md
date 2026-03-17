@@ -117,6 +117,7 @@ Rendering rules:
 | Independent PR merge queue conflict | WARNING | PR_MONITORING.md |
 | Independent PR merge queue CI failure | WARNING | PR_MONITORING.md |
 | Independent PR merge queue ejection | WARNING | PR_MONITORING.md |
+| PR adopted into monitoring (dead agent, non-draft) | INFORMATIONAL | SKILL.md, PR_MONITORING.md |
 
 ## Card Embedding
 

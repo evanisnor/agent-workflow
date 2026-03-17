@@ -38,11 +38,12 @@ NOW="$(date +%s)"
 
 # Fetch only required fields — never inject full payloads into agent context
 RESULT="$(gh pr view "${PR}" \
-  --json state,reviewDecision,statusCheckRollup \
-  2>/dev/null || echo '{"state":"UNKNOWN","reviewDecision":null,"statusCheckRollup":[]}')"
+  --json state,reviewDecision,statusCheckRollup,isDraft \
+  2>/dev/null || echo '{"state":"UNKNOWN","reviewDecision":null,"statusCheckRollup":[],"isDraft":false}')"
 
 STATE="$(printf '%s\n' "${RESULT}" | jq -r '.state')"
 REVIEW_DECISION="$(printf '%s\n' "${RESULT}" | jq -r '.reviewDecision // "NONE"')"
+IS_DRAFT="$(printf '%s\n' "${RESULT}" | jq -r '.isDraft')"
 
 # Summarise CI checks: count by conclusion, never emit raw log text
 # StatusContext objects have .state (not .conclusion/.status), so normalise both types
@@ -87,7 +88,7 @@ cleanup_state_file() {
 }
 
 if [[ "${CURRENT_STATE}" != "${LAST_STATE}" ]]; then
-  echo "State change: state=${STATE} review=${REVIEW_DECISION} ci=${CI_SUMMARY}"
+  echo "State change: state=${STATE} review=${REVIEW_DECISION} ci=${CI_SUMMARY} draft=${IS_DRAFT}"
   # Update state file with new state and reset timer
   yq e -n ".last_state = \"${CURRENT_STATE}\" | .state_since = ${NOW}" > "${STATE_FILE}"
 else
@@ -130,4 +131,5 @@ if [[ "${STATE}" == "MERGED" || "${STATE}" == "CLOSED" ]]; then
 fi
 
 # Still in progress
+echo "draft=${IS_DRAFT}"
 exit 4

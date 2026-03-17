@@ -307,7 +307,20 @@ On every startup, before resuming work:
 
       - **Exit 3 (PR closed/merged):** if merged, mark task `done`, clean up worktree via `remove-worktree.sh`, unblock dependents. If closed without merging, escalate to the human.
 
-      - **Any other exit code (1, 2, 4):** fall through to step 6b.
+      - **Exit 4 + `draft=false`:** Silently adopt into monitoring. Clear `agent_id` from the plan using `yq e -i` with `TASKS_PATH`. Notify the human:
+
+        > **-- Monitoring resumed:** PR is awaiting external review. Monitoring via activity poll.
+        >
+        > | #{number} — {title} |
+        > |---|
+        > | **Task:** T-{id}: {task_title} |
+        > | {pr_url} |
+
+        Continue to next orphaned worktree. Do **not** fall through to 6b. Worktree is retained for potential future agent restart.
+
+      - **Exit 4 + `draft=true`:** Agent has unfinished work. Fall through to step 6b.
+
+      - **Exit 1 or 2:** fall through to step 6b.
 
    b. **Otherwise** (no `pr_url`, or non-terminal exit code), escalate to the human:
       > ---

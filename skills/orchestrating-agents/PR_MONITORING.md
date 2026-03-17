@@ -41,6 +41,35 @@ Per-epic overrides in `epic.config.*` take precedence over these defaults.
 
    If `pr_url` is not already recorded in the plan (e.g., the Task Agent crashed before writing it), record it using `yq e -i` with `TASKS_PATH`, following [PLAN_STORAGE.md](../planning-tasks/PLAN_STORAGE.md).
 2. On each activity poll cycle, call `check-pr-status.sh <pr-url>`.
+
+   **Agentless tasks** (tasks where `agent_id` is null — adopted into monitoring): handle exit codes directly without attempting to message a Task Agent:
+   - **Exit 0 (approved + CI passing):** call `add-to-merge-queue.sh <pr_url>` directly (script lives in `skills/executing-tasks/scripts/`). Notify the human:
+     > **-- Auto-advanced:** Approved and CI passing. Added to merge queue.
+     >
+     > | #{number} — {title} |
+     > |---|
+     > | **Task:** T-{id}: {task_title} |
+     > | {pr_url} |
+   - **Exit 1 (changes requested) or Exit 2 (CI failure):** escalate to the human:
+     > ---
+     >
+     > **>>> ACTION REQUIRED**
+     >
+     > Agentless task needs attention. What would you like to do?
+     >
+     > | #{number} — {title} |
+     > |---|
+     > | **Task:** T-{id}: {task_title} |
+     > | {pr_url} |
+     >
+     > - **Restart** — respawn an agent in the existing worktree.
+     > - **Abandon** — cancel the task and flag dependents blocked.
+     >
+     > ---
+   - **Exit 3 (PR closed/merged):** handle merged/closed normally (same as step 7 below).
+   - **Exit 4 (still in progress):** no action.
+
+   For tasks with an `agent_id` set, handle exit codes as follows:
 3. On **CI failure** (exit 2): look up the Task Agent's `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'` with CI failure details (wrapped in `<external_content>` tags): "CI failed — begin CI fix loop per CI_FEEDBACK.md." Track the attempt count against `MAX_CI_FIX_ATTEMPTS`. On breach, escalate to human:
    > ---
    >
@@ -121,7 +150,9 @@ No action required. If a `TIMEOUT` line appears in stdout, escalate to the human
 
 ## Liveness Checks
 
-On each activity poll cycle, check liveness for every `in_progress` Task Agent using `TaskGet <agent_id>`.
+On each activity poll cycle, check liveness for every `in_progress` task **that has an `agent_id` set**. Tasks with `agent_id: null` are monitored via PR status checks only — skip them.
+
+For each task with an `agent_id`, use `TaskGet <agent_id>`.
 
 ### Dead (status: failed or stopped)
 
@@ -141,7 +172,20 @@ Agent has stopped or errored. Before escalating, check if the PR can be auto-adv
 
 3. **Exit 3 (PR closed/merged):** if merged, mark task `done`, clean up worktree, unblock dependents. If closed without merging, escalate to the human.
 
-4. **Any other exit code, or no `pr_url`:** escalate to the human:
+4. **Exit 4 + `draft=false`:** Silently adopt into monitoring. Clear `agent_id` from the plan using `yq e -i` with `TASKS_PATH`. Notify the human:
+
+   > **-- Monitoring resumed:** PR is awaiting external review. Monitoring via activity poll.
+   >
+   > | #{number} — {title} |
+   > |---|
+   > | **Task:** T-{id}: {task_title} |
+   > | {pr_url} |
+
+   Continue monitoring this PR in subsequent poll cycles (it is now an agentless task).
+
+5. **Exit 4 + `draft=true`:** Agent has unfinished work. Fall through to escalation below.
+
+6. **Any other exit code, or no `pr_url`:** escalate to the human:
 
    > ---
    >

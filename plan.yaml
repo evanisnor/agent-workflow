@@ -5303,3 +5303,17 @@ tasks:
       NOTIFICATIONS.md (style assignments), and SKILL.md (activity poll
       integration and in-memory list population).
 
+  - id: 116
+    name: silently-adopt-non-draft-prs-into-monitoring
+    status: done
+    depends_on: [112]
+    description: >
+      When Dispatch starts up and finds orphaned worktrees with open non-draft
+      PRs waiting for external review (check-pr-status.sh exit 4 + draft=false),
+      silently adopt them into the activity poll instead of blocking on a human
+      escalation prompt. Add isDraft to check-pr-status.sh output. Update
+      startup reconciliation step 6a with exit 4 sub-cases. Add agentless task
+      handling to PR_MONITORING.md for tasks with agent_id=null. Update liveness
+      checks to skip agentless tasks. Update STATUS.md to omit Agent label for
+      adopted tasks. Add notification row to NOTIFICATIONS.md.
+

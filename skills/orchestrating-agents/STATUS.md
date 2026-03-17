@@ -70,6 +70,8 @@ The Agent field shows the agent's relationship to the worktree:
 | `monitoring` | `TaskGet(agent_id)` returns `running` and Activity is a passive-wait state: `CI running`, `awaiting review`, `changes requested`, `in merge queue`, `stacking offered` |
 | `stopped` | `TaskGet(agent_id)` returns `failed` or `stopped` |
 
+If `agent_id` is null (task adopted into monitoring), omit the Agent label. Show only `**Activity:** {activity}`, same as independent worktree cards.
+
 ## Activity Values
 
 Derived by the Orchestrating Agent from plan state and live PR/CI context. Use the most specific value that applies:
@@ -101,6 +103,8 @@ Derived by the Orchestrating Agent from plan state and live PR/CI context. Use t
 | `ejected` | Independent PR; ejected from merge queue |
 | `closed` | Independent PR; closed without merging |
 | `merged` | Independent PR; merged (briefly, before cleanup) |
+
+For tasks with `agent_id: null`, derive activity from `check-pr-status.sh` using the same mapping as Independent PR Activity Derivation ([PR_MONITORING.md](PR_MONITORING.md) § Independent PR Activity Derivation).
 
 ### Stopped-Agent Activity Derivation
 
