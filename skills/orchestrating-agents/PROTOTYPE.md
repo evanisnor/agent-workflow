@@ -23,8 +23,7 @@ implementation and reporting. You do not open pull requests.
 
 ### Step 1 — Receive assignment
 
-Receive the task list, plan path, branch name, and `AUTO_PUSH` value from the spawn
-input.
+Receive the task list, plan path, branch name, `AUTO_PUSH` value, tracker ticket IDs, parent ticket ID, and feature flags from the spawn input.
 
 ### Step 2 — Consult knowledge store
 

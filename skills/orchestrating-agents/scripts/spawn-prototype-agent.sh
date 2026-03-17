@@ -38,6 +38,39 @@ if [[ ! -f "${PROTOTYPE_MD}" ]]; then
   exit 1
 fi
 
+# --- Extract epic-level metadata ---
+# Try envelope keys in order: .epic, .project, .milestone, then root level
+EPIC_FEATURE_FLAG=""
+EPIC_ROOT_ID=""
+for envelope in epic project milestone; do
+  val="$(yq e ".${envelope}.feature_flag // \"\"" "${PLAN_PATH}" 2>/dev/null || true)"
+  if [[ -n "${val}" && "${val}" != "null" ]]; then
+    EPIC_FEATURE_FLAG="${val}"
+  fi
+  val="$(yq e ".${envelope}.issue_tracking.root_id // \"\"" "${PLAN_PATH}" 2>/dev/null || true)"
+  if [[ -n "${val}" && "${val}" != "null" ]]; then
+    EPIC_ROOT_ID="${val}"
+  fi
+  # Stop after finding the first matching envelope
+  if [[ -n "${EPIC_FEATURE_FLAG}" || -n "${EPIC_ROOT_ID}" ]]; then
+    break
+  fi
+done
+
+# Fall back to root-level keys
+if [[ -z "${EPIC_FEATURE_FLAG}" ]]; then
+  val="$(yq e ".feature_flag // \"\"" "${PLAN_PATH}" 2>/dev/null || true)"
+  if [[ -n "${val}" && "${val}" != "null" ]]; then
+    EPIC_FEATURE_FLAG="${val}"
+  fi
+fi
+if [[ -z "${EPIC_ROOT_ID}" ]]; then
+  val="$(yq e ".issue_tracking.root_id // \"\"" "${PLAN_PATH}" 2>/dev/null || true)"
+  if [[ -n "${val}" && "${val}" != "null" ]]; then
+    EPIC_ROOT_ID="${val}"
+  fi
+fi
+
 # --- Emit prompt ---
 
 # Full contents of PROTOTYPE.md
@@ -51,6 +84,8 @@ cat << ASSIGNMENT
 - **Plan path:** ${PLAN_PATH}
 - **Branch name:** ${BRANCH_NAME}
 - **AUTO_PUSH:** ${PROTOTYPE_AUTO_PUSH}
+- **Parent ticket ID:** ${EPIC_ROOT_ID:-none}
+- **Epic feature flag:** ${EPIC_FEATURE_FLAG:-none}
 
 ### Tasks
 
@@ -63,13 +98,24 @@ for task_id in "${TASK_IDS[@]}"; do
 
   task_name="$(yq e "(.tasks[] | select(.id == \"${task_id}\")).name" "${PLAN_PATH}" 2>/dev/null || true)"
   task_desc="$(yq e "(.tasks[] | select(.id == \"${task_id}\")).description" "${PLAN_PATH}" 2>/dev/null || true)"
+  task_feature_flag="$(yq e "(.tasks[] | select(.id == \"${task_id}\")).feature_flag // \"\"" "${PLAN_PATH}" 2>/dev/null || true)"
 
   if [[ -z "${task_name}" ]]; then
     echo "spawn-prototype-agent.sh: task ID '${task_id}' not found in ${PLAN_PATH}" >&2
     exit 1
   fi
 
-  echo "- ${task_id}: ${task_name}"
+  # Resolve feature flag: task-level overrides epic-level
+  resolved_flag="${EPIC_FEATURE_FLAG}"
+  if [[ -n "${task_feature_flag}" && "${task_feature_flag}" != "null" ]]; then
+    resolved_flag="${task_feature_flag}"
+  fi
+
+  echo "- **${task_id}:** ${task_name}"
+  echo "  - **Tracker ticket ID:** ${task_id}"
+  if [[ -n "${resolved_flag}" ]]; then
+    echo "  - **Feature flag:** ${resolved_flag}"
+  fi
   echo ""
   echo "<external_content>"
   echo "${task_desc}"

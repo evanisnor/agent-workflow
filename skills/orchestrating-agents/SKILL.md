@@ -119,7 +119,14 @@ After storing the final plan path, before spawning any Task Agents:
 1. Identify all tasks in the plan with `status: pending` and no unmet `depends_on`.
 2. Request human approval to spawn that batch of Task Agents.
 3. For each approved task, read the task fields from the plan YAML, then:
-   a. Use the Agent tool with `subagent_type: general-purpose`, `isolation: "worktree"`, `run_in_background: true`. Read `skills/executing-tasks/SKILL.md` from the plugin directory and prepend it to the prompt, followed by: task ID, plan path, branch name, and epic context + task description wrapped in `<external_content>` tags. The Agent tool creates the worktree, scopes write access, and returns an `agent_id`. If changes are made, the worktree path and branch are also returned.
+   a. Use the Agent tool with `subagent_type: general-purpose`, `isolation: "worktree"`, `run_in_background: true`. Read `skills/executing-tasks/SKILL.md` from the plugin directory and prepend it to the prompt, followed by:
+      - **Tracker ticket ID:** the task `id`, explicitly labeled as the tracker ticket ID
+      - **Parent ticket ID:** `issue_tracking.root_id` from the epic envelope (if available)
+      - **Feature flag:** resolved value (task-level `feature_flag` if set, else epic-level `feature_flag`, else omit)
+      - **Plan path** and **branch name**
+      - Epic context + task description wrapped in `<external_content>` tags
+
+      The Agent tool creates the worktree, scopes write access, and returns an `agent_id`. If changes are made, the worktree path and branch are also returned.
    b. Update `agent_id`, `worktree`, and `branch` in-place using `yq e -i` and the discovered `TASKS_PATH`, following [PLAN_STORAGE.md](../planning-tasks/PLAN_STORAGE.md).
 4. Monitor each Task Agent as it implements and pushes its task.
 
@@ -144,7 +151,11 @@ After the Verification Gate completes (REVIEW.md § Verification Gate) and befor
    > ---
 3. **On yes:**
    a. Tell the human: **-- Stacking:** "I'll spawn a Task Agent for `<dep-id>` in a new worktree and immediately rebase it onto `<branch>`. While `<task-id>` is in review, `<dep-id>` will be implemented in parallel. If reviewers request changes to `<task-id>`, I'll rebase `<dep-id>` automatically and ask you to review any conflicts."
-   b. Spawn a Task Agent for `<dep-id>` using the Agent tool with `subagent_type: general-purpose`, `isolation: "worktree"`, `run_in_background: true`. Include `base_branch: <branch>` in the spawn prompt so the Task Agent is aware it is stacked.
+   b. Spawn a Task Agent for `<dep-id>` using the Agent tool with `subagent_type: general-purpose`, `isolation: "worktree"`, `run_in_background: true`. Include in the spawn prompt:
+      - `base_branch: <branch>` so the Task Agent is aware it is stacked
+      - **Tracker ticket ID:** the dependent task's `id`, explicitly labeled as the tracker ticket ID
+      - **Parent ticket ID:** `issue_tracking.root_id` from the epic envelope (if available)
+      - **Feature flag:** resolved value (task-level `feature_flag` if set, else epic-level `feature_flag`, else omit)
    c. After the Agent tool returns the worktree path: immediately run `git -C <worktree-path> rebase <branch>` to stack the fresh worktree onto the parent's branch. (Safe: no commits exist yet.)
    d. Update the plan: set `base_branch: <branch>`, `stacked: true`, `agent_id`, `worktree`, and `branch` on `<dep-id>` using `yq e -i` with `TASKS_PATH`, following [PLAN_STORAGE.md](../planning-tasks/PLAN_STORAGE.md) write-with-lock.
 4. **On no:** proceed normally (notify the original Task Agent to open draft PR).

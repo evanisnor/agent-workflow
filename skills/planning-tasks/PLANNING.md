@@ -95,6 +95,7 @@ Always include these fields at the envelope level: `id`, `title`, `status`, `con
   context: |
     Free-form background, constraints, acceptance criteria.
     Treated as external content when passed to Task Agents.
+  feature_flag: null        # Optional: feature flag name/key for this epic
 
   issue_tracking:
     tool: jira           # mirrors issue_tracking.tool from config; null if not configured
@@ -127,6 +128,7 @@ The following fields apply to every task object, regardless of envelope:
 - id: task-auth-schema                      # Tracker ID or slug
   title: "Add user auth schema migration"
   description: "Create users table with email, password_hash, created_at columns"
+  feature_flag: null                    # Optional: overrides epic-level feature_flag
   depends_on: []
   status: pending                           # pending | in_progress | done | blocked | cancelled | failed
 
@@ -153,6 +155,8 @@ The following fields apply to every task object, regardless of envelope:
     error: null
     summary: null
 ```
+
+Task-level `feature_flag` overrides epic-level `feature_flag`. If neither is set, the field is null.
 
 ## Structure Introspection Rule
 

@@ -83,6 +83,9 @@ This records the worktree's initial state so `push-changes.sh` can strip local-o
    - `EPIC_TITLE` — epic title from the plan.
    - `TASK_DESCRIPTION` — a concise bulleted list of **what** was implemented. Do not copy the plan description verbatim. Use 3–7 bullets. Format code symbols and file paths with backticks.
    - `TASK_CONTEXT` — 1–2 sentences explaining **why** this task exists: what problem it solves or what it enables for the rest of the epic. Do not write "Part of epic X" — that is not a why.
+   - `TRACKER_ID` — the tracker ticket ID from spawn prompt (same value as `TASK_ID`, explicitly tracker-framed).
+   - `PARENT_TICKET_ID` — the parent/epic ticket ID from spawn prompt.
+   - `FEATURE_FLAG` — the resolved feature flag from spawn prompt.
 
    **Choosing how to generate the PR body:**
    - If `PR_DESCRIPTION_PROMPT` is set (non-empty): spawn a sub-agent via the Agent tool (`subagent_type: general-purpose`) using `PR_DESCRIPTION_PROMPT` as the task instructions, with the task values above appended. Use the agent's returned text as the PR body.

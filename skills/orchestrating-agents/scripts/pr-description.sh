@@ -12,6 +12,9 @@
 #   EPIC_TITLE         — epic title from plan YAML
 #   PLAN_PATH          — path to the plan YAML file (used only in custom templates)
 #   WORKTREE           — worktree path (used only in custom templates)
+#   TRACKER_ID         — tracker ticket ID (used only in custom templates)
+#   PARENT_TICKET_ID   — parent/epic ticket ID (used only in custom templates)
+#   FEATURE_FLAG       — feature flag name/key (used only in custom templates)
 #
 # Outputs the rendered PR body to stdout.
 
@@ -57,6 +60,9 @@ _render() {
   tmpl="${tmpl//\{branch\}/${BRANCH:-}}"
   tmpl="${tmpl//\{plan_path\}/${PLAN_PATH:-}}"
   tmpl="${tmpl//\{worktree\}/${WORKTREE:-}}"
+  tmpl="${tmpl//\{tracker_id\}/${TRACKER_ID:-}}"
+  tmpl="${tmpl//\{parent_ticket_id\}/${PARENT_TICKET_ID:-}}"
+  tmpl="${tmpl//\{feature_flag\}/${FEATURE_FLAG:-}}"
   printf '%s' "${tmpl}"
 }
 
