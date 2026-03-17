@@ -48,13 +48,14 @@ Worktrees that exist on disk (per `git worktree list --porcelain`) but are not r
 ```
 | `{branch}` |
 |---|
-| **Activity:** independent |
+| **Activity:** {activity} |
 | **PR:** #{number} |
 | {pr_url} |
 ```
 
 - Omit Task row (no plan task).
-- Omit Agent label (just `**Activity:** independent`).
+- Omit Agent label (just `**Activity:** {activity}`).
+- `{activity}` is derived from PR status per [PR_MONITORING.md](PR_MONITORING.md) § Independent PR Activity Derivation. Use `no PR` when no PR is found.
 - PR discovered via `gh pr list --head <branch> --json number,url --jq '.[0]'`. Omit PR and URL rows if no PR found.
 
 Independent cards sort **after** all plan cards (after the `merged` group).
@@ -89,7 +90,17 @@ Derived by the Orchestrating Agent from plan state and live PR/CI context. Use t
 | `interrupted` | Agent stopped; work was incomplete (no PR, or PR is still draft) |
 | `unattended` | Agent stopped; PR is open and in flight |
 | `escalation required` | CI fix limit exceeded, unrecoverable error, or worktree path not registered |
-| `independent` | Worktree exists outside any Dispatch plan |
+| `no PR` | Independent worktree; no PR found |
+| `CI running` | Independent PR; CI in progress |
+| `awaiting review` | Independent PR; waiting for reviewer |
+| `approved` | Independent PR; approved + CI passing, awaiting human merge decision |
+| `changes requested` | Independent PR; reviewer requested changes |
+| `CI failed` | Independent PR; CI failed |
+| `in merge queue` | Independent PR; in merge queue |
+| `merge conflict` | Independent PR; conflict in merge queue |
+| `ejected` | Independent PR; ejected from merge queue |
+| `closed` | Independent PR; closed without merging |
+| `merged` | Independent PR; merged (briefly, before cleanup) |
 
 ### Stopped-Agent Activity Derivation
 
@@ -168,7 +179,7 @@ Used in the startup greeting and completion summary when a plan summary is warra
 ### Worktree Cards
 
 1. **Card inclusion:** Every task with `worktree` set in the plan, plus all independent worktrees (see Independent Worktree Cards above). Include `done` tasks from the current session briefly (with `merged` activity) until the worktree is cleaned up.
-2. **Sort order:** `active` → `monitoring` → `stopped` → `merged` → `independent`.
+2. **Sort order:** `active` → `monitoring` → `stopped` → `merged` → independent (monitored: any activity except `no PR`) → independent (`no PR`).
 3. **Empty state:** If no plan worktrees exist but independent worktrees exist, still render Worktree Cards (independent only). If no worktrees of any kind exist and a plan is loaded, omit the Worktrees section header — only show Queued.
 
 ### Queued section

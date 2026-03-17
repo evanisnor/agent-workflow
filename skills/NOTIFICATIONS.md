@@ -108,6 +108,15 @@ Rendering rules:
 | PR approved | SUCCESS | CODE_REVIEW.md |
 | All tasks complete | SUCCESS | SKILL.md |
 | Ready for new assignment | SUCCESS | SKILL.md |
+| Independent PR approved + CI passing | ACTION REQUIRED | PR_MONITORING.md |
+| Independent PR changes requested | INFORMATIONAL | PR_MONITORING.md |
+| Independent PR CI failed | INFORMATIONAL | PR_MONITORING.md |
+| Independent PR merged | SUCCESS | PR_MONITORING.md |
+| Independent PR closed | INFORMATIONAL | PR_MONITORING.md |
+| Independent PR added to merge queue | INFORMATIONAL | PR_MONITORING.md |
+| Independent PR merge queue conflict | WARNING | PR_MONITORING.md |
+| Independent PR merge queue CI failure | WARNING | PR_MONITORING.md |
+| Independent PR merge queue ejection | WARNING | PR_MONITORING.md |
 
 ## Card Embedding
 

@@ -5288,3 +5288,18 @@ tasks:
       calls. Fixes silent failures when multiple panes are opened in quick
       succession.
 
+  - id: 115
+    name: monitor-independent-worktree-prs
+    status: done
+    depends_on: []
+    description: >
+      Extend the activity poll to monitor PRs on independent worktrees (those
+      not tracked by any Dispatch plan). Replace the static 'independent'
+      activity label with granular values derived from check-pr-status.sh and
+      check-merge-queue.sh exit codes. Track independent PR state in an
+      in-memory list. Route all state-change notifications to the human since
+      no Task Agent exists for these PRs. Updates STATUS.md (activity vocab
+      and card template), PR_MONITORING.md (new monitoring sections),
+      NOTIFICATIONS.md (style assignments), and SKILL.md (activity poll
+      integration and in-memory list population).
+

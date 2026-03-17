@@ -331,7 +331,7 @@ On every startup, before resuming work:
 
       Omit PR and URL rows if no `pr_url` is set.
 
-7. **Set up activity poll.** After resolving all escalations above, create the activity poll via CronCreate (see Section 7: Activity Polling). This single cron job replaces all per-script background processes — it runs `check-review-requests.sh`, `check-pr-status.sh` for each active PR, `check-merge-queue.sh` for each PR in the merge queue, and agent liveness checks via `TaskGet`. Store the returned cron job ID for the session.
+7. **Set up activity poll.** After resolving all escalations above, create the activity poll via CronCreate (see Section 7: Activity Polling). This single cron job replaces all per-script background processes — it runs `check-review-requests.sh`, `check-pr-status.sh` for each active PR (including independent PRs), `check-merge-queue.sh` for each PR in the merge queue (including independent PRs), and agent liveness checks via `TaskGet`. Store the returned cron job ID for the session.
 
 ## Startup Greeting
 
@@ -453,11 +453,15 @@ Then render one card per independent worktree:
 
 > | `{branch}` |
 > |---|
-> | **Activity:** independent |
+> | **Activity:** {activity} |
 > | **PR:** #{number} |
 > | {pr_url} |
 
 For each independent worktree, discover the branch name from `git worktree list --porcelain` (strip `refs/heads/` from the `branch` ref) and check for an associated PR via `gh pr list --head <branch> --json number,url --jq '.[0]'`. Omit PR and URL rows if no PR is found.
+
+For each independent worktree with a PR, derive `{activity}` by running `check-pr-status.sh <pr-url>` and mapping the exit code per [PR_MONITORING.md](PR_MONITORING.md) § Independent PR Activity Derivation. For worktrees without a PR, use `no PR`.
+
+Populate an **in-memory independent PR list** with entries for each independent worktree: `branch`, `worktree_path`, `pr_url` (if found), `pr_number` (if found), `activity` (derived value), and `in_merge_queue: false`. This list is used by the activity poll (Section 7) to monitor independent PRs alongside plan-tracked PRs.
 
 This listing appears last in every scenario where it is applicable (A, B, D). In Scenario C it is omitted (completed plans have no active worktrees to track). These worktrees also appear in the full status display — see STATUS.md § Independent Worktree Cards.
 
@@ -538,6 +542,12 @@ On each activity poll cycle, execute the following checks in order:
 3. **Merge queue:** For each task with `status: in_progress` and a PR in the merge queue, run `check-merge-queue.sh <pr-url>`. Handle exit codes per [PR_MONITORING.md](PR_MONITORING.md) § Merge Queue Monitoring.
 
 4. **Agent liveness:** For each task with `status: in_progress` and an `agent_id`, call `TaskGet <agent_id>`. Handle dead, stalled, and healthy agents per [PR_MONITORING.md](PR_MONITORING.md) § Liveness Checks.
+
+5. **Independent PR status:** Re-discover independent worktrees via `git worktree list --porcelain`, subtract main and plan-tracked paths. For each with a known PR:
+   a. If not in merge queue: run `check-pr-status.sh <pr-url>`. Handle per [PR_MONITORING.md](PR_MONITORING.md) § Independent PR Monitoring.
+   b. If in merge queue: run `check-merge-queue.sh <pr-url>`. Handle per [PR_MONITORING.md](PR_MONITORING.md) § Independent PR Merge Queue Monitoring.
+   c. For worktrees without a known PR, re-check via `gh pr list --head <branch> --json number,url --jq '.[0]'`. If found, add to the in-memory independent PR list and derive activity.
+   d. Prune entries whose worktree path no longer appears in `git worktree list`.
 
 ### Timeout Detection
 
