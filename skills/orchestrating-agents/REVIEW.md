@@ -95,10 +95,10 @@ Triggered when a Task Agent requests approval to open a PR.
    > ---
 4. **On approval:**
    a. Call `close-pane.sh "<window-id>"`.
-   b. Run the **Verification Gate** (see below) before notifying the Task Agent.
+   b. Run the **Verification Gate** (see below) before sending the proceed message to the Task Agent via SendMessage.
 5. **On rejection:**
    a. Call `close-pane.sh "<window-id>"`.
-   b. Send a structured rejection to the Task Agent containing:
+   b. Look up the Task Agent's `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'` with a structured rejection containing:
       - Which files are affected.
       - What specific change is expected.
       - Acceptance criteria the change must satisfy.
@@ -106,7 +106,7 @@ Triggered when a Task Agent requests approval to open a PR.
 
 ## Verification Gate
 
-Runs after diff approval and before notifying the Task Agent to open the PR. Read `verification.prompt` and `verification.manual_gate` from config (via `config.sh`).
+Runs after diff approval and before sending the proceed `SendMessage` to the Task Agent. Read `verification.prompt` and `verification.manual_gate` from config (via `config.sh`).
 
 **Step 1 — Delegate prompt (if `VERIFICATION_PROMPT` is set):**
 
@@ -130,9 +130,9 @@ Runs after diff approval and before notifying the Task Agent to open the PR. Rea
 3. Await explicit human confirmation.
 4. Call `close-pane.sh "<window-id>"`.
 
-**Step 3 — Notify Task Agent:**
+**Step 3 — Send proceed message to Task Agent:**
 
-After both steps complete (or if neither is configured, immediately after diff approval), notify the Task Agent: "diff approved — proceed to open draft PR".
+After both steps complete (or if neither is configured, immediately after diff approval), look up the Task Agent's `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'`: "diff approved — proceed to open draft PR".
 
 If both `VERIFICATION_PROMPT` and `VERIFICATION_MANUAL_GATE` are set, the sub-agent runs first, then the manual gate opens.
 
@@ -154,7 +154,7 @@ Triggered when a PR reviewer requests changes after the PR is open.
    > - **Reject** — provide a response to relay to the reviewer.
    >
    > ---
-3. **On approval:** notify the Task Agent to implement the change.
+3. **On approval:** look up the Task Agent's `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'`: "Reviewer change approved — implement the following change: <summary of approved change>."
 4. **On rejection:** tell the Task Agent the human does not agree with the requested change and provide a response to relay to the reviewer.
 5. Once the Task Agent has implemented and pushed the approved change:
    a. Call `open-review-pane.sh "review-update-<task-id>" "<worktree-path>"`. Store the returned window ID.
@@ -171,8 +171,8 @@ Triggered when a PR reviewer requests changes after the PR is open.
       1. Check the plan for tasks where `stacked: true` and `base_branch` matches this task's `branch`.
       2. If none: skip.
       3. If any: call `scripts/rebase-stacked-worktrees.sh <plan-file> <this-task-branch>`.
-      4. **On success (exit 0):** notify each rebased Task Agent: "Task `<parent-task-id>` received reviewer-requested changes. Your worktree has been rebased onto the updated branch."
-      5. **On conflict (exit 1, outputs `CONFLICT=<task-id> WORKTREE=<path>`):** notify the conflicting Task Agent to resolve the conflict in its worktree, follow the Merge Conflict Review Loop below, then re-run `scripts/rebase-stacked-worktrees.sh <plan-file> <this-task-branch>` after the human approves the push.
+      4. **On success (exit 0):** for each rebased Task Agent, look up its `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'`: "Task `<parent-task-id>` received reviewer-requested changes. Your worktree has been rebased onto the updated branch."
+      5. **On conflict (exit 1, outputs `CONFLICT=<task-id> WORKTREE=<path>`):** look up the conflicting Task Agent's `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'`: "Rebase conflict detected — resolve and notify me when ready." Follow the Merge Conflict Review Loop below, then re-run `scripts/rebase-stacked-worktrees.sh <plan-file> <this-task-branch>` after the human approves the push.
       6. Resume the Reviewer-Requested Change Review Loop for this task from step 1.
 
 ## Merge Conflict Review Loop
@@ -180,7 +180,7 @@ Triggered when a PR reviewer requests changes after the PR is open.
 Triggered when a merge queue conflict is detected.
 
 1. Receive conflict notification (from `check-merge-queue.sh`).
-2. Notify the Task Agent to resolve the conflict in its worktree.
+2. Look up the Task Agent's `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'`: "Merge queue conflict detected — resolve in your worktree and notify me when ready."
 3. When the Task Agent reports resolution:
    a. Call `open-review-pane.sh "review-conflict-<task-id>" "<worktree-path>"`. Store the returned window ID.
    b. Present the resolved diff to the human using the ACTION REQUIRED banner:
@@ -191,5 +191,5 @@ Triggered when a merge queue conflict is detected.
       > Conflict resolution diff open in **review-conflict-`<task-id>`** — approve or request changes. Type `open editor` to open the worktree in `<EDITOR_APP>` (if configured).
       >
       > ---
-   c. **On approval:** call `close-pane.sh "<window-id>"`, notify Task Agent to push.
+   c. **On approval:** call `close-pane.sh "<window-id>"`. Look up the Task Agent's `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'`: "Conflict resolution approved — push via `push-changes.sh`."
    d. **On rejection:** close window, send structured rejection to Task Agent (see Initial Diff Review Loop step 5).

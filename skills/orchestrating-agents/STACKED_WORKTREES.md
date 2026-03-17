@@ -35,7 +35,7 @@ The Task Agent's spawn prompt includes `base_branch: <branch>` so the Task Agent
 
 ## Stacking Prompt Flow
 
-The Orchestrating Agent offers stacking interactively after the Verification Gate completes and before notifying the Task Agent to open its PR.
+The Orchestrating Agent offers stacking interactively after the Verification Gate completes and before sending the proceed `SendMessage` to the Task Agent.
 
 ### When to Offer
 
@@ -53,7 +53,7 @@ On **yes**, explain the lifecycle implications before spawning:
 
 > "I'll spawn a Task Agent for `<dep-id>` in a new worktree and immediately rebase it onto `<branch>`. While `<task-id>` is in review, `<dep-id>` will be implemented in parallel. If reviewers request changes to `<task-id>`, I'll rebase `<dep-id>` automatically and ask you to review any conflicts."
 
-On **no**, proceed normally (notify Task Agent to open draft PR).
+On **no**, proceed normally — look up the Task Agent's `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'`: "diff approved — proceed to open draft PR".
 
 ### Lifecycle Implications to Communicate
 
@@ -74,10 +74,9 @@ scripts/rebase-stacked-worktrees.sh <plan-file> <task-a-branch>
 
 The script rebases in stack-depth order (shallowest first) and recurses for deeper dependents. See [rebase-stacked-worktrees.sh](scripts/rebase-stacked-worktrees.sh) for full behavior.
 
-**On success:** notify each rebased Task Agent:
-> "Task `<parent-task-id>` received reviewer-requested changes. Your worktree has been rebased onto the updated branch."
+**On success:** for each rebased Task Agent, look up its `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'`: "Task `<parent-task-id>` received reviewer-requested changes. Your worktree has been rebased onto the updated branch."
 
-**On conflict (script exits 1):** the script outputs `CONFLICT=<task-id> WORKTREE=<path>`. Follow the Merge Conflict Review Loop in [REVIEW.md](REVIEW.md): notify the conflicting Task Agent to resolve the conflict in its worktree, open a review pane for human approval, then re-run `rebase-stacked-worktrees.sh` to continue rebasing the remainder of the stack.
+**On conflict (script exits 1):** the script outputs `CONFLICT=<task-id> WORKTREE=<path>`. Look up the conflicting Task Agent's `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'`: "Rebase conflict detected — resolve and notify me when ready." Follow the Merge Conflict Review Loop in [REVIEW.md](REVIEW.md), open a review pane for human approval, then re-run `rebase-stacked-worktrees.sh` to continue rebasing the remainder of the stack.
 
 ## Post-Merge Rebase
 
@@ -89,8 +88,7 @@ The Orchestrating Agent calls `rebase-stacked-worktrees.sh` after step 4 of the 
 scripts/rebase-stacked-worktrees.sh <plan-file> <merged-branch>
 ```
 
-**On success:** notify each rebased Task Agent:
-> "Task `<parent-task-id>` has merged into main. Your worktree has been rebased onto main. GitHub will retarget your PR base automatically."
+**On success:** for each rebased Task Agent, look up its `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'`: "Task `<parent-task-id>` has merged into main. Your worktree has been rebased onto main. GitHub will retarget your PR base automatically."
 
 **On conflict:** same resolution flow as Change Propagation above.
 
@@ -103,7 +101,7 @@ When A merges and B's branch is rebased onto main, GitHub automatically retarget
 Conflicts are handled the same way for both change propagation and post-merge rebase:
 
 1. `rebase-stacked-worktrees.sh` aborts the rebase on first conflict and exits 1 with `CONFLICT=<task-id> WORKTREE=<path>`.
-2. Notify the conflicting Task Agent to resolve the conflict in its worktree.
+2. Look up the conflicting Task Agent's `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'`: "Rebase conflict detected — resolve and notify me when ready."
 3. Follow the Merge Conflict Review Loop in [REVIEW.md](REVIEW.md).
 4. After human-approved push, re-run `rebase-stacked-worktrees.sh <plan-file> <updated-branch>` to continue rebasing the remainder of the stack.
 

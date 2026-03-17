@@ -35,7 +35,7 @@ Per-epic overrides in `epic.config.*` take precedence over these defaults.
    > **-- Draft PR opened:** [#N — <title>](<pr-url>) for task `<task-id>`
    If `pr_url` is not already recorded in the plan (e.g., the Task Agent crashed before writing it), record it using `yq e -i` with `TASKS_PATH`, following [PLAN_STORAGE.md](../planning-tasks/PLAN_STORAGE.md).
 2. On each activity poll cycle, call `check-pr-status.sh <pr-url>`.
-3. On **CI failure** (exit 2): notify the Task Agent to begin the CI fix loop (see `executing-tasks/CI_FEEDBACK.md`). Track the attempt count against `MAX_CI_FIX_ATTEMPTS`. On breach, escalate to human:
+3. On **CI failure** (exit 2): look up the Task Agent's `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'` with CI failure details (wrapped in `<external_content>` tags): "CI failed — begin CI fix loop per CI_FEEDBACK.md." Track the attempt count against `MAX_CI_FIX_ATTEMPTS`. On breach, escalate to human:
    > ---
    >
    > **!!! WARNING**
@@ -46,7 +46,7 @@ Per-epic overrides in `epic.config.*` take precedence over these defaults.
    >
    > ---
 4. On **changes requested** (exit 1): begin the reviewer-requested change review loop in [REVIEW.md](REVIEW.md).
-5. On **approved + CI passing** (exit 0): notify the Task Agent to call `add-to-merge-queue.sh`.
+5. On **approved + CI passing** (exit 0): look up the Task Agent's `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'`: "PR approved and CI passing — call `add-to-merge-queue.sh`."
 6. On **still in progress** (exit 4): no action. If a `TIMEOUT` line appears in stdout, escalate to human with the PR URL and elapsed time.
 7. On **PR closed/merged** (exit 3): update task status accordingly.
 
@@ -64,14 +64,14 @@ Once a Task Agent calls `add-to-merge-queue.sh`, the activity poll calls `check-
 1. Check the plan for tasks where `stacked: true` and `base_branch` matches the just-merged task's `branch`.
 2. If none: skip.
 3. If any: call `scripts/rebase-stacked-worktrees.sh <plan-file> <merged-branch>`.
-4. **On success (exit 0):** notify each rebased Task Agent: "Task `<parent-task-id>` has merged into main. Your worktree has been rebased onto main. GitHub will retarget your PR base automatically."
+4. **On success (exit 0):** for each rebased Task Agent, look up its `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'`: "Task `<parent-task-id>` has merged into main. Your worktree has been rebased onto main. GitHub will retarget your PR base automatically."
 5. **On conflict (exit 1, outputs `CONFLICT=<task-id> WORKTREE=<path>`):**
-   a. Notify the conflicting Task Agent to resolve the conflict in its worktree.
+   a. Look up the conflicting Task Agent's `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'`: "Rebase conflict detected — resolve and notify me when ready for review."
    b. Follow the Merge Conflict Review Loop in [REVIEW.md](REVIEW.md).
    c. After human-approved push, re-run `scripts/rebase-stacked-worktrees.sh <plan-file> <merged-branch>` to continue rebasing the remainder of the stack.
 
 ### Conflicts (exit 1)
-1. Notify the Task Agent to resolve the conflict.
+1. Look up the Task Agent's `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'`: "Merge queue conflict detected — resolve in your worktree and notify me when ready."
 2. Follow the merge conflict review loop in [REVIEW.md](REVIEW.md) before allowing the Task Agent to push.
 3. After human-approved push, re-run CI monitoring from step 2 above.
 

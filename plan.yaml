@@ -5215,3 +5215,15 @@ tasks:
       extraction, and config schema docs. Include the new fields in the default
       PR template when values are available.
 
+  - id: 109
+    name: explicit-sendmessage-protocol
+    status: done
+    depends_on: [30]
+    description: >
+      Add a central Task Agent Communication Protocol section to SKILL.md
+      defining the lookup → liveness guard → SendMessage pattern, then replace
+      every vague "notify the Task Agent" across SKILL.md, PR_MONITORING.md,
+      REVIEW.md, and STACKED_WORKTREES.md with explicit SendMessage instructions.
+      Strengthen Hard Constraints to prohibit Edit/Write/Bash on worktree
+      directories and mandate SendMessage.
+
