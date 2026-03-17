@@ -5367,7 +5367,7 @@ tasks:
 
   - id: 122
     name: create-plan-update-script
-    status: pending
+    status: done
     depends_on: [121]
     description: >
       Create scripts/plan-update.sh — centralized plan mutation script with
