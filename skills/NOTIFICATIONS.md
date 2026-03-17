@@ -109,6 +109,71 @@ Rendering rules:
 | All tasks complete | SUCCESS | SKILL.md |
 | Ready for new assignment | SUCCESS | SKILL.md |
 
+## Card Embedding
+
+Every notification that references a PR, task, worktree, or plan must embed a **card** (single-column markdown table) providing entity details. The banner text gives event context; the card gives entity details.
+
+### When to Embed
+
+Embed a card whenever the notification references:
+- A PR (use PR Card)
+- A task (use Task Card)
+- A worktree (use Worktree Card — see STATUS.md)
+- A plan (use Plan Card — see STATUS.md)
+- An issue tracker issue (use Issue Card)
+
+### PR Card
+
+```
+| #{number} — {title} |
+|---|
+| **Task:** T-{id}: {task_title} |
+| **State:** {description of what changed} |
+| {pr_url} |
+```
+
+- Omit Task row if not associated with a plan task.
+- Omit State row if the banner text already conveys the change.
+
+### Task Card
+
+```
+| T-{id}: {title} |
+|---|
+| **Status:** {old} → {new} |
+| **Branch:** `{branch}` |
+| **PR:** #{number} |
+| {pr_url} |
+```
+
+- Omit Branch/PR/URL rows when not yet assigned.
+
+### Issue Card
+
+```
+| {PREFIX}-{id}: {title} |
+|---|
+| **Tracker:** {tracker_name} |
+| **Status:** {issue_status} |
+| {issue_url} |
+```
+
+### Placement Rules
+
+- **INFORMATIONAL / SUCCESS** banners: card appears immediately after the banner line.
+- **ACTION REQUIRED / WARNING** block banners: card appears inside the horizontal-rule block, between the body text and the options list.
+
+### Example
+
+```
+**-- Draft PR opened:**
+
+| #42 — Add auth login flow |
+|---|
+| **Task:** T-1: Implement login flow |
+| https://github.com/org/repo/pull/42 |
+```
+
 ## Agent-to-Agent Messages
 
 Messages between agents (e.g., "diff approved — proceed to open draft PR") are **not** human-facing notifications. They do not use banner styles.

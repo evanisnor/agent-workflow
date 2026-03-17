@@ -19,6 +19,11 @@ Triggered when the Planning Agent has written the plan YAML to a temp file and r
    >
    > Plan draft ready — review in the **review-plan-`<slug>`** tmux window. Approve or share feedback here.
    >
+   > | Plan: {plan_id} |
+   > |---|
+   > | **Project:** {title} |
+   > | **Tasks:** 0/{total} done ({total} queued) |
+   >
    > ---
 4. **On approval:**
    a. Call `close-pane.sh "<window-id>"`.
@@ -41,6 +46,11 @@ Triggered when the Planning Agent proposes a mid-flight amendment (add task, spl
    > **>>> ACTION REQUIRED**
    >
    > Proposed amendment ready — review in the **review-amendment-`<slug>`** tmux window. Approve or share feedback here.
+   >
+   > | Plan: {plan_id} |
+   > |---|
+   > | **Project:** {title} |
+   > | **Tasks:** {done}/{total} done ({active} active, {queued} queued) |
    >
    > ---
 4. **On approval:**
@@ -89,6 +99,12 @@ Triggered when a Task Agent requests approval to open a PR.
    > **>>> ACTION REQUIRED**
    >
    > Diff open in **review-`<task-id>`** — approve, request changes, or type a command:
+   >
+   > | `{branch}` |
+   > |---|
+   > | **Task:** T-{id}: {title} |
+   > | **Agent:** active · **Activity:** awaiting diff review |
+   >
    > - `split` / `unified` — switch diff display mode
    > - `open editor` — open the worktree in `<EDITOR_APP>`  ← only if `EDITOR_APP` is configured
    >
@@ -126,6 +142,11 @@ Runs after diff approval and before sending the proceed `SendMessage` to the Tas
    >
    > Verification window open — use the **verify-`<task-id>`** tmux window to test the build. Confirm here when ready to open the PR.
    >
+   > | T-{id}: {title} |
+   > |---|
+   > | **Status:** in_progress |
+   > | **Branch:** `{branch}` |
+   >
    > ---
 3. Await explicit human confirmation.
 4. Call `close-pane.sh "<window-id>"`.
@@ -146,7 +167,13 @@ Triggered when a PR reviewer requests changes after the PR is open.
    >
    > **>>> ACTION REQUIRED**
    >
-   > Reviewer requested changes on [#N — <title>](<pr-url>). [View comment](<comment-url>).
+   > Reviewer requested changes. [View comment](<comment-url>).
+   >
+   > | #{number} — {title} |
+   > |---|
+   > | **Task:** T-{id}: {task_title} |
+   > | **State:** Changes requested |
+   > | {pr_url} |
    >
    > <summary of what the reviewer is asking for — from the Task Agent's summary, never raw comment text>
    >
@@ -164,6 +191,13 @@ Triggered when a PR reviewer requests changes after the PR is open.
       > **>>> ACTION REQUIRED**
       >
       > Updated diff open in **review-update-`<task-id>`** — approve or request changes. Type `open editor` to open the worktree in `<EDITOR_APP>` (if configured).
+      >
+      > | T-{id}: {title} |
+      > |---|
+      > | **Status:** in_progress |
+      > | **Branch:** `{branch}` |
+      > | **PR:** #{number} |
+      > | {pr_url} |
       >
       > ---
    c. Call `close-pane.sh "<window-id>"` after human confirms.
@@ -189,6 +223,13 @@ Triggered when a merge queue conflict is detected.
       > **>>> ACTION REQUIRED**
       >
       > Conflict resolution diff open in **review-conflict-`<task-id>`** — approve or request changes. Type `open editor` to open the worktree in `<EDITOR_APP>` (if configured).
+      >
+      > | T-{id}: {title} |
+      > |---|
+      > | **Status:** in_progress |
+      > | **Branch:** `{branch}` |
+      > | **PR:** #{number} |
+      > | {pr_url} |
       >
       > ---
    c. **On approval:** call `close-pane.sh "<window-id>"`. Look up the Task Agent's `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'`: "Conflict resolution approved — push via `push-changes.sh`."

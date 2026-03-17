@@ -40,7 +40,12 @@ Status values:
 ### `NEW_REVIEW_REQUEST <pr-url> <pr-number> <title> <author>`
 
 1. Immediately print the arrival notification — **do not wait for the Review Agent**:
-   > **-- Review requested:** [PR #`<number>` — `<title>`](`<pr-url>`) by @`<author>` — Review Agent dispatched.
+   > **-- Review requested:** Review Agent dispatched.
+   >
+   > | #{number} — {title} |
+   > |---|
+   > | **Author:** @{author} · **Status:** preliminary |
+   > | {pr_url} |
 
 2. Add an entry to the pending reviews list with `status: preliminary`.
 
@@ -77,7 +82,11 @@ Status values:
 
 1. Remove the entry from the pending reviews list.
 2. If the entry was in `reviewing` status: call `close-pane.sh "<pane_window_id>"` and notify the human:
-   > **-- Review removed:** PR #`<number>` — `<title>`. The diff pane has been closed.
+   > **-- Review removed:** The diff pane has been closed.
+   >
+   > | #{number} — {title} |
+   > |---|
+   > | {pr_url} |
 
 ## Review Agent Returns
 
@@ -87,7 +96,12 @@ When the Review Agent completes and returns its structured output:
 2. Store as `review_context` in the matching pending review entry.
 3. Update `status` to `ready`.
 4. Notify the human:
-   > **-- Preliminary review ready:** [PR #`<number>` — `<title>`](`<pr-url>`). Let me know when you're ready to review.
+   > **-- Preliminary review ready:** Let me know when you're ready to review.
+   >
+   > | #{number} — {title} |
+   > |---|
+   > | **Author:** @{author} · **Status:** ready |
+   > | {pr_url} |
 
 ## Human Readiness
 
@@ -117,6 +131,11 @@ When the human signals they want to review a PR ("ready to review PR #N", "show 
    >
    > Diff open in the **review-incoming-`<pr-number>`** tmux window. Approve here when ready, or switch to `unified` / `split` to change the diff view.
    >
+   > | #{number} — {title} |
+   > |---|
+   > | **Author:** @{author} · **Status:** reviewing |
+   > | {pr_url} |
+   >
    > ---
 6. Update `status` to `reviewing`.
 
@@ -129,7 +148,12 @@ When the human approves:
 3. Call `close-pane.sh "<pane_window_id>"`.
 4. Update `status` to `approved`.
 5. Print confirmation:
-   > **--- Approved:** [PR #`<number>` — `<title>`](`<pr-url>`). Comments and merge are up to the author.
+   > **--- Approved:** Comments and merge are up to the author.
+   >
+   > | #{number} — {title} |
+   > |---|
+   > | **Author:** @{author} · **Status:** approved |
+   > | {pr_url} |
 
 Comments are the human's responsibility — made manually on GitHub. Do not post, draft, or suggest comments on behalf of the human.
 

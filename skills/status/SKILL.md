@@ -3,27 +3,32 @@ name: status
 description: "Display a status table of all active worktrees, their agent state, current activity, and PR state. Invoke with /status."
 ---
 
-Render the status display immediately using the rules below. Do not read any external files. Do not summarise in prose instead of or in addition to the tables. Never use bulleted lists, numbered lists, or any non-table format — every piece of status data must appear inside a markdown table row.
+Render the status display immediately using the rules below. Do not read any external files. Do not summarise in prose instead of or in addition to cards. Never use bulleted lists, numbered lists, or any non-card format — every piece of status data must appear inside a card.
 
-## Worktrees Table
+## Worktree Cards
+
+Render one card per worktree:
 
 ```
 ## Worktrees
 
-| Branch | Task | Agent | Activity | PR |
-|--------|------|-------|----------|----|
-| `{branch}` | {id}: {title} | {agent} | {activity} | {pr} |
+| `{branch}` |
+|---|
+| **Task:** T-{id}: {title} |
+| **Agent:** {agent} · **Activity:** {activity} |
+| **PR:** #{number} |
+| {pr_url} |
 ```
 
-**Columns:**
+**Rows:**
 
-| Column | Source | Notes |
-|--------|--------|-------|
-| Branch | `task.branch` | Rendered as inline code. If stacked, append ` (on {parent_branch})`. If it has stacked dependents, append ` (← T-{child_id})`. |
+| Row | Source | Notes |
+|-----|--------|-------|
+| Header | `task.branch` | Rendered as inline code. If stacked, append ` (on {parent_branch})`. If it has stacked dependents, append ` (← T-{child_id})`. |
 | Task | `task.id` + `task.title` | Format: `T-{id}: {title}`. Truncate title to 25 chars if needed. |
-| Agent | Last-known agent liveness | See Agent Values below. |
-| Activity | Last-known activity state | See Activity Values below. |
-| PR | `task.pr_url` — render as `#N` linked if available | `—` if none. |
+| Agent · Activity | Last-known agent liveness + activity state | See Agent Values and Activity Values below. |
+| PR | `task.pr_url` — render as `#{number}` | Omit this row and the URL row when no PR exists. |
+| URL | `task.pr_url` — full URL on its own line | Omit when no PR exists. Keeps the URL clickable. |
 
 **Note:** Agent and Activity values reflect the Orchestrating Agent's last-known state. If agent liveness has not been checked recently, values may be stale. The canonical status rendering (STATUS.md) performs live liveness checks.
 
@@ -55,41 +60,55 @@ Render the status display immediately using the rules below. Do not read any ext
 | `escalation required` | CI fix limit exceeded or unrecoverable error |
 | `independent` | Worktree exists outside any Dispatch plan |
 
-## Queued Table
+## Queued Task Cards
 
-Render below the Worktrees table when there are tasks without worktrees. Omit if no queued tasks exist.
+Render below the Worktree Cards when there are tasks without worktrees. Omit if no queued tasks exist.
 
 ```
 ## Queued
 
-| Task | Title | Status |
-|------|-------|--------|
-| {id} | {title} | {status} |
+| T-{id} |
+|---|
+| **Title:** {title} |
+| **Status:** {status} |
 ```
 
-**Columns:**
+**Rows:**
 
-| Column | Source | Notes |
-|--------|--------|-------|
-| Task | `task.id` | |
+| Row | Source | Notes |
+|-----|--------|-------|
+| Header | `task.id` | Format: `T-{id}` |
 | Title | `task.title` | Truncate to 30 chars if needed |
 | Status | Derived from dependencies | `ready` if all `depends_on` are `done`; `blocked on T-{id}` otherwise |
 
-**Independent worktrees:** Worktrees from `git worktree list` that are not referenced by any plan task (excluding the main worktree) appear in the Worktrees table with Task `—`, Agent `—`, Activity `independent`, and PR discovered via `gh pr list --head <branch>`. See STATUS.md § Independent Worktree Rows for full column definitions.
+## Pending Review Cards
+
+Render below the Queued section (or below the Worktree Cards if Queued is omitted) when there are entries in the pending reviews list. Omit if no pending reviews exist.
+
+```
+## Pending Reviews
+
+| #{number} — {title} |
+|---|
+| **Author:** @{author} · **Status:** {status} |
+| {pr_url} |
+```
+
+**Independent worktrees:** Worktrees from `git worktree list` that are not referenced by any plan task (excluding the main worktree) appear as Worktree Cards with no Task row, no Agent label (just `**Activity:** independent`), and PR discovered via `gh pr list --head <branch>`. See STATUS.md § Independent Worktree Cards for full row definitions.
 
 ## Rendering Rules
 
-1. **Worktrees table row inclusion:** Every task with a worktree, plus all independent worktrees. Include recently merged tasks until cleanup. Sort: `active` → `monitoring` → `stopped` → `merged` → `independent`.
+1. **Worktree Cards inclusion:** Every task with a worktree, plus all independent worktrees. Include recently merged tasks until cleanup. Sort: `active` → `monitoring` → `stopped` → `merged` → `independent`.
 
-2. **Queued section row inclusion:** `pending` tasks with all deps met (show as `ready`). `pending`/`blocked` tasks with unmet deps (show as `blocked on T-{id}`). Omit `cancelled` unless human asks for full view. Sort: `ready` → `blocked`.
+2. **Queued section card inclusion:** `pending` tasks with all deps met (show as `ready`). `pending`/`blocked` tasks with unmet deps (show as `blocked on T-{id}`). Omit `cancelled` unless human asks for full view. Sort: `ready` → `blocked`.
 
-3. **Empty states:** If no plan worktrees exist but independent worktrees exist, still render the Worktrees table (independent rows only). If no worktrees of any kind exist and a plan is loaded, omit Worktrees header — show only Queued. If no queued tasks, omit the section.
+3. **Empty states:** If no plan worktrees exist but independent worktrees exist, still render Worktree Cards (independent only). If no worktrees of any kind exist and a plan is loaded, omit Worktrees header — show only Queued. If no queued tasks, omit the section.
 
-4. **No active plan:** If independent worktrees exist, render the Worktrees table (independent rows only) above the no-plan text. Then display:
+4. **No active plan:** If independent worktrees exist, render Worktree Cards (independent only) above the no-plan text. Then display:
    > No active plan. Here's what you can do:
    > - **Plan** — describe what you'd like to build and I'll decompose it into tasks
    > - **Implement** — point me at an existing plan file to start executing
    >
    > Also available: `/status`, `/config`, `/help`
 
-5. **Single worktree:** still render the table (do not switch to prose).
+5. **Single worktree:** still render the card (do not switch to prose).

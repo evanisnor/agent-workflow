@@ -15,7 +15,7 @@ Both scripts read `POLLING_TIMEOUT_MINUTES` from `config.sh`, persist state betw
 
 ### PR Link Rule
 
-All human-facing notifications about a task with a known `pr_url` must include the PR as a clickable link. Use the format `[#N — <title>](<pr-url>)` (or `[#N](<pr-url>)` if the title is unavailable). Never omit the PR link from a human notification when one is known.
+All human-facing notifications about a task with a known `pr_url` must embed a PR Card (see [NOTIFICATIONS.md](../NOTIFICATIONS.md) § Card Embedding). Never omit the PR card from a human notification when one is known.
 
 ## Retry and Timeout Limits
 
@@ -32,7 +32,13 @@ Per-epic overrides in `epic.config.*` take precedence over these defaults.
 ## PR and CI Monitoring
 
 1. When a Task Agent reports a newly opened PR, immediately tell the human:
-   > **-- Draft PR opened:** [#N — <title>](<pr-url>) for task `<task-id>`
+   > **-- Draft PR opened:**
+   >
+   > | #{number} — {title} |
+   > |---|
+   > | **Task:** T-{id}: {task_title} |
+   > | {pr_url} |
+
    If `pr_url` is not already recorded in the plan (e.g., the Task Agent crashed before writing it), record it using `yq e -i` with `TASKS_PATH`, following [PLAN_STORAGE.md](../planning-tasks/PLAN_STORAGE.md).
 2. On each activity poll cycle, call `check-pr-status.sh <pr-url>`.
 3. On **CI failure** (exit 2): look up the Task Agent's `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'` with CI failure details (wrapped in `<external_content>` tags): "CI failed — begin CI fix loop per CI_FEEDBACK.md." Track the attempt count against `MAX_CI_FIX_ATTEMPTS`. On breach, escalate to human:
@@ -40,7 +46,14 @@ Per-epic overrides in `epic.config.*` take precedence over these defaults.
    >
    > **!!! WARNING**
    >
-   > CI fix attempts exhausted for [#N — <title>](<pr-url>) (task `<task-id>`). <failure-summary>. What would you like to do?
+   > CI fix attempts exhausted. <failure-summary>. What would you like to do?
+   >
+   > | #{number} — {title} |
+   > |---|
+   > | **Task:** T-{id}: {task_title} |
+   > | **State:** CI fix limit reached ({N}/{M} attempts) |
+   > | {pr_url} |
+   >
    > - **Retry** — reset the counter and let the Task Agent try again.
    > - **Abandon** — cancel the task and flag dependents blocked.
    >
@@ -88,7 +101,14 @@ Once a Task Agent calls `add-to-merge-queue.sh`, the activity poll calls `check-
    >
    > **!!! WARNING**
    >
-   > PR [#N](<url>) was ejected from the merge queue. What would you like to do?
+   > PR was ejected from the merge queue. What would you like to do?
+   >
+   > | #{number} — {title} |
+   > |---|
+   > | **Task:** T-{id}: {task_title} |
+   > | **State:** Ejected from merge queue |
+   > | {pr_url} |
+   >
    > - **Re-queue** — add the PR back to the merge queue.
    > - **Abandon** — cancel the task and flag dependents blocked.
    >
@@ -110,7 +130,12 @@ Agent has stopped or errored. Before escalating, check if the PR can be auto-adv
 1. If `pr_url` is set, run `check-pr-status.sh <pr_url>`.
 2. **Exit 0 (approved + CI passing):** auto-advance the PR. Run `add-to-merge-queue.sh <pr_url>` directly. Notify the human:
 
-   > **-- Auto-advanced:** [#N](<pr-url>) (task `<task-id>`) is approved and CI is passing. Added to merge queue.
+   > **-- Auto-advanced:** Approved and CI passing. Added to merge queue.
+   >
+   > | #{number} — {title} |
+   > |---|
+   > | **Task:** T-{id}: {task_title} |
+   > | {pr_url} |
 
    Then proceed to merge queue monitoring for this PR. Clean up the worktree after merge.
 
@@ -122,11 +147,20 @@ Agent has stopped or errored. Before escalating, check if the PR can be auto-adv
    >
    > **!!! WARNING**
    >
-   > Task Agent `<agent_id>` (task `<task_id>`) has stopped — last activity: <timestamp>. PR: [#N](<pr-url>) (or "no PR" if `pr_url` is not set). What would you like to do?
+   > Task Agent has stopped — last activity: <timestamp>. What would you like to do?
+   >
+   > | #{number} — {title} |
+   > |---|
+   > | **Task:** T-{id}: {task_title} |
+   > | **State:** Agent stopped |
+   > | {pr_url} |
+   >
    > - **Restart** — respawn the agent (up to `MAX_AGENT_RESTARTS` allowed).
    > - **Abandon** — cancel the task and flag dependents blocked.
    >
    > ---
+
+   Omit PR card header number, Task row, and URL row if no `pr_url` is set. Use the task title as the card header instead: `| T-{id}: {task_title} |`.
 
 Immediately update the task's in-memory activity state to `unattended` (if PR is open) or `interrupted` (if no PR or PR is draft), so any subsequent status rendering reflects the agent's death before the human responds.
 
@@ -141,12 +175,21 @@ If `TaskGet` shows the agent is running but the last activity timestamp from the
 >
 > **!!! WARNING**
 >
-> Agent `<agent_id>` for task `<task_id>` appears stalled — no activity for N minutes. PR: [#N](<pr-url>) (or "no PR" if `pr_url` is not set). What would you like to do?
+> Agent appears stalled — no activity for N minutes. What would you like to do?
+>
+> | #{number} — {title} |
+> |---|
+> | **Task:** T-{id}: {task_title} |
+> | **State:** Agent stalled (N minutes) |
+> | {pr_url} |
+>
 > - **Wait** — I'll check again at the next polling cycle.
 > - **Restart** — respawn the agent (up to `MAX_AGENT_RESTARTS` allowed).
 > - **Abandon** — cancel the task and flag dependents blocked.
 >
 > ---
+
+Omit PR card header number, Task row, and URL row if no `pr_url` is set. Use the task title as the card header instead: `| T-{id}: {task_title} |`.
 
 Handle restart and abandon the same as Dead above. Do not change the activity state for stalled agents — the agent is technically running, so Agent remains `active` or `monitoring` based on the current Activity value.
 

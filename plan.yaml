@@ -5262,3 +5262,17 @@ tasks:
       auto-advance before escalating. Adds notification style entry in
       NOTIFICATIONS.md.
 
+  - id: 113
+    name: card-format-status-and-notifications
+    status: done
+    depends_on: [30]
+    description: >
+      Replace wide markdown table displays with single-column card format
+      across all skill files. Cards stack vertically to avoid terminal width
+      issues and keep URLs clickable. Update STATUS.md with canonical card
+      templates (Worktree, Queued Task, Pending Review, Plan), add Card
+      Embedding section to NOTIFICATIONS.md with PR/Task/Issue card templates
+      and placement rules, update status/SKILL.md slash command, and update
+      all notification examples in SKILL.md, PR_MONITORING.md, CODE_REVIEW.md,
+      REVIEW.md, and executing-tasks/SKILL.md to embed cards.
+

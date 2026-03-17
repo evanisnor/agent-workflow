@@ -103,7 +103,13 @@ This records the worktree's initial state so `push-changes.sh` can strip local-o
       # Commit per PLAN_STORAGE.md write-with-lock pattern
       ```
 
-   c. Immediately notify the Primary Agent: **-- Draft PR opened:** "Draft PR opened for task `<task-id>`: <pr-url>"
+   c. Immediately notify the Primary Agent:
+      > **-- Draft PR opened:**
+      >
+      > | #{number} — {title} |
+      > |---|
+      > | **Task:** T-{id}: {task_title} |
+      > | {pr_url} |
 
 6. **Probe the repo** by sourcing `probe-repo.sh`. This exports `MERGE_QUEUE_ENABLED` and `HAS_REQUIRED_CHECKS` for use in the steps below.
 
@@ -116,7 +122,13 @@ This records the worktree's initial state so `push-changes.sh` can strip local-o
    >
    > **>>> ACTION REQUIRED**
    >
-   > CI is passing on [#N](<pr-url>) (task `<task-id>`). Should I mark it ready for review now, or would you like me to wait until a specific time? (reply 'now' or describe when, e.g. 'Monday morning' or 'tomorrow at 9am')
+   > CI is passing. Should I mark it ready for review now, or would you like me to wait until a specific time? (reply 'now' or describe when, e.g. 'Monday morning' or 'tomorrow at 9am')
+   >
+   > | #{number} — {title} |
+   > |---|
+   > | **Task:** T-{id}: {task_title} |
+   > | **State:** CI passing |
+   > | {pr_url} |
    >
    > ---
    - If "now" (or no preference): proceed immediately to step 8.
@@ -142,7 +154,13 @@ This records the worktree's initial state so `push-changes.sh` can strip local-o
    >
    > **>>> ACTION REQUIRED**
    >
-   > [#N](<pr-url>) (task `<task-id>`) is approved and ready to merge. Should I add it to the merge queue now, or wait until a specific time? (reply 'now' or describe when, e.g. 'Monday morning' or 'tomorrow at 9am')
+   > Approved and ready to merge. Should I add it to the merge queue now, or wait until a specific time? (reply 'now' or describe when, e.g. 'Monday morning' or 'tomorrow at 9am')
+   >
+   > | #{number} — {title} |
+   > |---|
+   > | **Task:** T-{id}: {task_title} |
+   > | **State:** Approved — ready to merge |
+   > | {pr_url} |
    >
    > ---
    - If "now" (or no preference): proceed immediately to step 10.
