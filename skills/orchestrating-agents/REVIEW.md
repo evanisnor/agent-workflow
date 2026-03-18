@@ -157,6 +157,8 @@ After both steps complete (or if neither is configured, immediately after diff a
 
 If both `VERIFICATION_PROMPT` and `VERIFICATION_MANUAL_GATE` are set, the sub-agent runs first, then the manual gate opens.
 
+After the Task Agent opens the draft PR and reports CI status, handle the Mark-Ready Gate (SKILL.md § PR State Transitions).
+
 ## Reviewer-Requested Change Review Loop
 
 Triggered when a PR reviewer requests changes (exit 1) or leaves comments (exit 5) after the PR is open. The triggering event provides reviewer username(s).

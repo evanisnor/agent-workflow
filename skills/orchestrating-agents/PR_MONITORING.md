@@ -43,7 +43,7 @@ Per-epic overrides in `epic.config.*` take precedence over these defaults.
 2. On each polling cycle, run `check-pr-status.sh <pr-url>` and handle the results.
 
    **Agentless tasks** (tasks where `agent_id` is null — adopted into monitoring): handle exit codes directly without attempting to message a Task Agent:
-   - **Exit 0 (approved + CI passing):** call `add-to-merge-queue.sh <pr_url>` directly (script lives in `skills/executing-tasks/scripts/`). Notify the human:
+   - **Exit 0 (approved + CI passing):** call `add-to-merge-queue.sh <pr_url>` directly (script lives in `skills/orchestrating-agents/scripts/`). Notify the human:
      > **-- Auto-advanced:** Approved and CI passing. Added to merge queue.
      >
      > | #{number} — {title} |
@@ -89,7 +89,7 @@ Per-epic overrides in `epic.config.*` take precedence over these defaults.
    > ---
 4. On **changes requested** (exit 1): begin the reviewer-requested change review loop in [REVIEW.md](REVIEW.md), passing reviewer username(s) from the summary.
 4a. On **reviewer comments** (exit 5): begin the reviewer-requested change review loop in [REVIEW.md](REVIEW.md), passing reviewer username(s) from the summary. Same treatment as exit 1.
-5. On **approved + CI passing** (exit 0): look up the Task Agent's `agent_id` from the plan, run the liveness guard (SKILL.md § Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'`: "PR approved and CI passing — call `add-to-merge-queue.sh`."
+5. On **approved + CI passing** (exit 0): trigger the Merge-Queue Gate (SKILL.md § PR State Transitions). The Orchestrating Agent presents the timing question to the human and calls `add-to-merge-queue.sh` directly after approval — the Task Agent is never instructed to call merge scripts.
 6. On **still in progress** (exit 4): If the OA has a `pending_re_review` record for this PR and the summary shows `ci_green=true`:
    - Check if `review` is `APPROVED` → the reviewer approved while CI was running. Clear `pending_re_review`. The next poll cycle will return exit 0 and proceed to merge queue normally.
    - If `review` is not `APPROVED` → call `request-re-review.sh <pr_url> <reviewer>` for each tracked reviewer. Clear `pending_re_review`. Notify the human:
@@ -105,7 +105,7 @@ Per-epic overrides in `epic.config.*` take precedence over these defaults.
 
 ## Merge Queue Monitoring
 
-Once a Task Agent calls `add-to-merge-queue.sh`, run `check-merge-queue.sh <pr-url>` on each polling cycle. Handle each outcome:
+Once the Orchestrating Agent calls `add-to-merge-queue.sh`, run `check-merge-queue.sh <pr-url>` on each polling cycle. Handle each outcome:
 
 ### Success (exit 0)
 1. Update task `status: done` and `result.merged_at` in the plan using `yq e -i` with `TASKS_PATH`, following [PLAN_STORAGE.md](../planning-tasks/PLAN_STORAGE.md).
@@ -284,7 +284,7 @@ Notify the human with an ACTION REQUIRED banner offering to add to the merge que
 >
 > ---
 
-On "merge": run `add-to-merge-queue.sh <pr-url>` (script lives in `skills/executing-tasks/scripts/`), set activity to `in merge queue`, set `in_merge_queue: true`.
+On "merge": run `add-to-merge-queue.sh <pr-url>` (script lives in `skills/orchestrating-agents/scripts/`), set activity to `in merge queue`, set `in_merge_queue: true`.
 
 On "skip": set activity to `approved`, continue monitoring.
 

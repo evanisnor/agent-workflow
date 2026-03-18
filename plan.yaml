@@ -5398,3 +5398,8 @@ tasks:
     status: done
     depends_on: []
     description: Add a Data Extraction section to skills/status/SKILL.md with safe yq patterns for reading plan YAML. The agent was improvising yq commands with @csv encoding, which fails on nested fields like depends_on. Provide the correct yq object-output command and remove the incorrect "Do not read any external files" instruction.
+  - id: 132
+    name: move-pr-state-transitions-to-oa
+    status: done
+    depends_on: []
+    description: Move PR state transitions (mark-ready, merge-queue) from Task Agent to Orchestrating Agent. Task Agents can no longer call mark-pr-ready.sh, add-to-merge-queue.sh, gh pr ready, or gh pr merge. The OA handles both transitions with human approval gates, converting prompt-level enforcement into mechanical enforcement.

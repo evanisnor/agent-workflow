@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# save-session-state.sh <memory-dir> <plan-file> [--independent-prs <yaml>] [--pending-reviews <yaml>]
+# save-session-state.sh <memory-dir> <plan-file> [--independent-prs <yaml>] [--pending-reviews <yaml>] [--deferred-actions <yaml>]
 #
 # Writes a dispatch-session-state.yaml snapshot to the Claude Code memory directory.
 # Used by the Orchestrating Agent to cache session state for warm-start on next session.
@@ -25,6 +25,7 @@ shift 2
 
 INDEPENDENT_PRS_YAML=""
 PENDING_REVIEWS_YAML=""
+DEFERRED_ACTIONS_YAML=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -34,6 +35,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --pending-reviews)
       PENDING_REVIEWS_YAML="$2"
+      shift 2
+      ;;
+    --deferred-actions)
+      DEFERRED_ACTIONS_YAML="$2"
       shift 2
       ;;
     *)
@@ -147,6 +152,13 @@ ABSOLUTE_PLAN=$(cd "$(dirname "$PLAN_FILE")" && echo "$(pwd)/$(basename "$PLAN_F
   echo "pending_reviews:"
   if [[ -n "$PENDING_REVIEWS_YAML" ]]; then
     echo "$PENDING_REVIEWS_YAML" | sed 's/^/  /'
+  else
+    echo "  []"
+  fi
+
+  echo "deferred_actions:"
+  if [[ -n "$DEFERRED_ACTIONS_YAML" ]]; then
+    echo "$DEFERRED_ACTIONS_YAML" | sed 's/^/  /'
   else
     echo "  []"
   fi

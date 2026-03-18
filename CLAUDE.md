@@ -38,7 +38,7 @@ All shell scripts must be compatible with bash 3.2 (the macOS system default). D
 |---|---|---|
 | **Orchestrating Agent** | `skills/orchestrating-agents/` | Coordinates all work, spawns other agents, reviews diffs, monitors PRs/CI. Never plans or writes code. |
 | **Planning Agent** | `skills/planning-tasks/` | Decomposes work into atomic tasks, builds dependency trees, syncs with configured issue tracker. Spawned on-demand, exits after plan approval. |
-| **Task Agents** | `skills/executing-tasks/` | One per task. Each runs in an isolated git worktree, implements a single task, shepherds its PR to merge. |
+| **Task Agents** | `skills/executing-tasks/` | One per task. Each runs in an isolated git worktree, implements a single task, opens a draft PR and watches CI. |
 
 ### Workflow Sequence
 
@@ -47,8 +47,8 @@ All shell scripts must be compatible with bash 3.2 (the macOS system default). D
 3. For each batch of ready tasks → Orchestrating Agent spawns Task Agents in isolated worktrees
 4. Each Task Agent implements its task, opens a draft PR
 5. Orchestrating Agent reviews the diff (opens a tmux pane) → Human approves
-6. Task Agent marks PR ready, watches CI, adds to merge queue on pass
-7. Orchestrating Agent monitors merge → rebases remaining worktrees, unblocks dependent tasks
+6. Task Agent watches CI → Orchestrating Agent marks PR ready (human approval) → monitors review
+7. Orchestrating Agent adds to merge queue (human approval) → monitors merge → rebases remaining worktrees, unblocks dependent tasks
 
 ### Directory Structure (target state)
 
@@ -107,7 +107,7 @@ SKILL.md instructions are loaded once at skill invocation and stored as regular 
 - Use `SendMessage` for all Task Agent communication (lookup `agent_id` → `TaskGet` liveness check → `SendMessage`).
 - If your SKILL.md instructions seem missing or incomplete, re-read `skills/orchestrating-agents/SKILL.md` from the plugin directory before taking any action.
 
-**Task Agent** — implements exactly one task in an isolated worktree; opens a draft PR and shepherds it to merge. Never modifies files outside its assigned worktree.
+**Task Agent** — implements exactly one task in an isolated worktree; opens a draft PR and watches CI. Never modifies files outside its assigned worktree. Never calls `mark-pr-ready.sh`, `add-to-merge-queue.sh`, `gh pr ready`, or `gh pr merge` — all PR state transitions beyond draft are handled exclusively by the Orchestrating Agent.
 
 **Planning Agent** — decomposes work into tasks and builds dependency trees. Never writes code or opens PRs.
 

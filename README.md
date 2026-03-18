@@ -245,7 +245,7 @@ Running `/config setup` handles both files automatically — it creates the proj
 - **Network access** is limited to domains listed in `sandbox.network.allowed_domains`.
 - **Read access** is denied for `~/.ssh/**`, `~/.gnupg/**`, `**/.env`, `**/*.pem`, `**/*.key`, plus any paths in `sandbox.filesystem.extra_deny_read`.
 - Protected branches (`git.protected_branches`) are enforced at the permissions layer, independent of agent reasoning.
-- `gh pr merge` without `--auto` is always denied — Task Agents can only add PRs to the merge queue, never merge directly.
+- `gh pr merge` without `--auto` is always denied — only the Orchestrating Agent can add PRs to the merge queue, after human approval. Task Agents never call merge or mark-ready commands.
 
 ### Prompt injection defense
 

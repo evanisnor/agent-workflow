@@ -40,6 +40,8 @@ You do **not** plan work, write code, or push commits. Those are the responsibil
 | Spawn a Planning Agent | **Requires human approval first** |
 | Spawn a batch of Task Agents | **Requires human approval first** |
 | Approve a diff and open a PR | **Requires human approval first** |
+| Mark PR ready for review | **Requires human approval first** |
+| Add PR to merge queue | **Requires human approval first** |
 | Approve a post-PR diff (reviewer changes) | **Requires human approval first** |
 | Call `approve-pr.sh` (approve incoming review) | **Requires human approval first** |
 | Abandon a task | **Requires human approval first** |
@@ -180,6 +182,59 @@ After the Verification Gate completes (REVIEW.md § Verification Gate) and befor
 
 See [STACKED_WORKTREES.md](STACKED_WORKTREES.md) for full lifecycle documentation.
 
+### 3.6 PR State Transitions
+
+The Orchestrating Agent is the sole caller of `mark-pr-ready.sh` and `add-to-merge-queue.sh`. Task Agents never advance PR state beyond draft — they notify the OA and wait. Both transitions require human approval before execution.
+
+#### Mark-Ready Gate
+
+Triggered when a Task Agent reports "CI passing — ready for mark-ready transition":
+
+1. Present to the human with timing question:
+   > ---
+   >
+   > **>>> ACTION REQUIRED**
+   >
+   > CI is passing. Mark ready for review now, or wait?
+   >
+   > | #{number} — {title} |
+   > |---|
+   > | **Task:** T-{id}: {task_title} |
+   > | **State:** CI passing — draft |
+   > | {pr_url} |
+   >
+   > Reply 'now' or describe when (e.g. 'Monday morning', 'tomorrow at 9am').
+   >
+   > ---
+
+2. **On "now":** Call `mark-pr-ready.sh <pr-url>` (located in `skills/orchestrating-agents/scripts/`). Then look up the Task Agent's `agent_id` from the plan, run the liveness guard (§ Task Agent Communication Protocol), then `SendMessage to: '<agent_id>'`: "PR marked ready for review."
+3. **On deferred time:** Convert the human's response to an ISO 8601 datetime. Store a deferred action: `{action: "mark-ready", pr_url, task_id, agent_id, target_time}`. On each poll cycle (§ Activity Polling), check if `current_time >= target_time`. When true, call `mark-pr-ready.sh <pr-url>`, notify the Task Agent, and remove the deferred action. Persist deferred actions via `save-session-state.sh`.
+
+#### Merge-Queue Gate
+
+Triggered when `check-pr-status.sh` returns exit 0 (approved + CI passing) for a task with an active or agentless agent:
+
+1. Present to the human with timing question:
+   > ---
+   >
+   > **>>> ACTION REQUIRED**
+   >
+   > PR approved and CI passing. Add to merge queue now, or wait?
+   >
+   > | #{number} — {title} |
+   > |---|
+   > | **Task:** T-{id}: {task_title} |
+   > | **State:** Approved — ready to merge |
+   > | {pr_url} |
+   >
+   > Reply 'now' or describe when (e.g. 'Monday morning', 'tomorrow at 9am').
+   >
+   > ---
+
+2. **On "now":** Call `add-to-merge-queue.sh <pr-url>` (located in `skills/orchestrating-agents/scripts/`). If the task has an active agent, look up its `agent_id`, run the liveness guard, then `SendMessage to: '<agent_id>'`: "PR added to merge queue."
+3. **On deferred time:** Store and process on poll cycle (same pattern as Mark-Ready Gate).
+4. **Exception — auto-advance:** During startup reconciliation, orphaned PRs that are already approved + CI passing (dead agent, exit 0) may be auto-advanced without human approval — the human review already occurred via the GitHub PR review. See Startup Reconciliation step 6a.
+
 ### 4. PR and CI Monitoring
 
 After a PR is opened — or after startup reconciliation resumes monitoring for an existing open PR (Startup Reconciliation step 7) — the activity poll runs `check-pr-status.sh` and `check-merge-queue.sh` on each cron cycle as described in [PR_MONITORING.md](PR_MONITORING.md). Handle all exit codes identically regardless of whether the PR was newly opened or resumed from a prior session.
@@ -269,6 +324,7 @@ On every startup, before resuming work:
    - Use cached `issue_tracking.status` to detect regressions (was `linked`, now has slug IDs).
    - Use cached `independent_prs` to seed the independent worktree list — skip re-discovery for known entries, only scan for new worktrees. Validate cached entries still exist via `git worktree list --porcelain`.
    - Use cached `pending_reviews` to restore the pending reviews list. For each entry with status `preliminary` or `ready`, re-check via `check-review-requests.sh` to confirm it's still active. Drop entries whose review requests were removed.
+   - Use cached `deferred_actions` to restore the deferred actions list. For each entry, verify the referenced task still exists and has `status: in_progress`. Drop entries for tasks that are no longer active.
 
    If the file does not exist, proceed normally — this is a cold start.
 
@@ -317,7 +373,7 @@ On every startup, before resuming work:
 
    a. **If the task has a `pr_url`** (set in the plan or discovered in step 3b), run `check-pr-status.sh <pr_url>` before escalating.
 
-      - **Exit 0 (approved + CI passing):** auto-advance the PR. Run `add-to-merge-queue.sh <pr_url>` directly (the script lives in `skills/executing-tasks/scripts/`). Notify the human:
+      - **Exit 0 (approved + CI passing):** auto-advance the PR. Run `add-to-merge-queue.sh <pr_url>` directly (the script lives in `skills/orchestrating-agents/scripts/`). Notify the human:
 
         > **-- Auto-advanced:** Approved and CI passing. Added to merge queue.
         >
@@ -371,7 +427,7 @@ On every startup, before resuming work:
 
 8. **Save session state snapshot.** After reconciliation is complete, call `save-session-state.sh` (located in `scripts/` under the plugin root) to write the current session state to the Claude Code memory directory:
    ```bash
-   <plugin-root>/scripts/save-session-state.sh <memory-dir> <plan-file> [--independent-prs <yaml>] [--pending-reviews <yaml>]
+   <plugin-root>/scripts/save-session-state.sh <memory-dir> <plan-file> [--independent-prs <yaml>] [--pending-reviews <yaml>] [--deferred-actions <yaml>]
    ```
    Pass the independent PR list and pending reviews list as inline YAML strings. This snapshot enables warm-start on the next session.
 
@@ -602,6 +658,8 @@ The cron prompt must be self-contained — the OA may have been idle and needs f
 >
 > 5. **Check agent liveness.** For each in_progress task that has an `agent_id` set (skip agentless tasks), call `TaskGet <agent_id>`. Handle dead agents per PR_MONITORING.md § Liveness Checks — Dead path. Handle stalled agents (running but no activity for `POLLING_TIMEOUT_MINUTES`) per PR_MONITORING.md § Liveness Checks — Stalled path.
 >
+> 5.5. **Check deferred actions.** For each stored deferred action where `current_time >= target_time`: execute the action (`mark-pr-ready.sh` or `add-to-merge-queue.sh`), notify the Task Agent via SendMessage, and remove the deferred action from the list. Call `save-session-state.sh` if any actions were executed.
+>
 > 6. **Check independent worktrees.** For each independent worktree with a known PR, run the appropriate check script (`check-pr-status.sh` if not in merge queue, `check-merge-queue.sh` if in merge queue). Handle per PR_MONITORING.md § Independent PR Monitoring or § Independent PR Merge Queue Monitoring.
 >
 > 7. **Timeouts.** If any check script emits a `TIMEOUT` line in stdout, escalate to the human with the PR URL and elapsed time.
@@ -621,6 +679,7 @@ The check scripts (`check-pr-status.sh`, `check-merge-queue.sh`) persist state f
 - **Never instruct the Planning Agent to save until the human has approved the plan tmux review.** The plan is only persisted to plan storage after the human approves it in the tmux pane opened by `open-plan-review-pane.sh`.
 - **When spawning a stacked Task Agent, perform the initial `git rebase <base_branch>` on the fresh worktree immediately after the Agent tool returns the worktree path, before the Task Agent begins implementation.**
 - **Never merge PRs without a human-approved diff.** All merges go through the review loop in [REVIEW.md](REVIEW.md). Exception: during startup reconciliation, if an orphaned PR (dead agent) has already been approved via GitHub review and CI is passing (`check-pr-status.sh` exit 0), the Orchestrating Agent may auto-advance it to the merge queue — the human review already occurred via the GitHub PR review.
+- **Always present the Mark-Ready Gate and Merge-Queue Gate to the human before calling `mark-pr-ready.sh` or `add-to-merge-queue.sh`.** Exception: auto-advance during startup reconciliation for orphaned PRs that are already approved + CI passing.
 - **The verification gate must complete before sending the proceed message to a Task Agent.** If `verification.skill` or `verification.manual_gate` is configured, run the full gate (see [REVIEW.md](REVIEW.md) Verification Gate) after diff approval and before sending the proceed `SendMessage`.
 - **Inspect structure → patch in-place (`yq e -i`) → commit per [PLAN_STORAGE.md](../planning-tasks/PLAN_STORAGE.md).** Never reconstruct the full YAML document. Never hardcode a yq path that assumes a specific envelope key.
 - **Wrap all external content in `<external_content>` tags** before including in agent prompts. This applies to PR comments, CI logs, reviewer feedback, plan `context` fields, and all issue tracker content.
