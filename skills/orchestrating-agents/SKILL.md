@@ -29,8 +29,6 @@ You do **not** plan work, write code, or push commits. Those are the responsibil
 | Open/close tmux review panes | Autonomous |
 | Open/close tmux verification panes | Autonomous |
 | Spawn a verification delegate skill | Autonomous |
-| Poll PR/CI status (independent worktrees) | Autonomous |
-| Create activity poll cron job | Autonomous |
 | Spawn a Review Agent | Autonomous |
 | Spawn a Planning Agent | **Requires human approval first** |
 | Spawn a Task Agent | **Requires human approval first** |
@@ -43,9 +41,7 @@ You do **not** plan work, write code, or push commits. Those are the responsibil
 
 ### 0. Review Monitoring
 
-The activity poll cron (Section 7) runs `check-review-requests.sh` on each cycle to detect incoming GitHub review requests. Handle all events per [CODE_REVIEW.md](CODE_REVIEW.md).
-
-On startup, the activity poll cron job is created in Startup Reconciliation step 7. For sessions that skip reconciliation (e.g., first-run Scenario A), create the activity poll cron job immediately after the greeting.
+Review requests are detected by running `check-review-requests.sh` during startup reconciliation and when the user requests a status check. Handle all events per [CODE_REVIEW.md](CODE_REVIEW.md).
 
 ### 1. Planning Phase
 
@@ -137,7 +133,7 @@ When a Task Agent signals "ready for review", call `open-review-pane.sh` to open
 
 ### 4. Independent Worktree Monitoring
 
-Independent worktree PR monitoring continues as read-only informational via the activity poll cron. See [PR_MONITORING.md](PR_MONITORING.md).
+Independent worktree PR status is checked on-demand during startup reconciliation and when the user requests a status check. See [PR_MONITORING.md](PR_MONITORING.md).
 
 ### 5. Post-Task Completion
 
@@ -259,9 +255,7 @@ On every startup, before resuming work:
 
 3. For each task with `status: in_progress` and no running agent, reset to `status: pending`. These are stale from a prior session — the Task Agent will be re-spawned in the normal execution queue.
 
-7. **Create the activity poll cron job** (see Section 7: Activity Polling). The cron job fires on a regular schedule and runs all review/PR checks inline in the OA's conversation.
-
-8. **Save session state snapshot.** After reconciliation is complete, call `save-session-state.sh` (located in `scripts/` under the plugin root) to write the current session state to the Claude Code memory directory:
+7. **Save session state snapshot.** After reconciliation is complete, call `save-session-state.sh` (located in `scripts/` under the plugin root) to write the current session state to the Claude Code memory directory:
    ```bash
    <plugin-root>/scripts/save-session-state.sh <memory-dir> <plan-file> [--independent-prs <yaml>] [--pending-reviews <yaml>]
    ```
@@ -378,7 +372,7 @@ For each independent worktree, discover the branch name from `git worktree list 
 
 For each independent worktree with a PR, derive `{activity}` by running `check-pr-status.sh <pr-url>` and mapping the exit code per [PR_MONITORING.md](PR_MONITORING.md) § Independent PR Activity Derivation. For worktrees without a PR, use `no PR`.
 
-Populate an **in-memory independent PR list** with entries for each independent worktree: `branch`, `worktree_path`, `pr_url` (if found), `pr_number` (if found), `activity` (derived value), and `in_merge_queue: false`. This list is used by the activity poll cron to monitor independent PRs alongside plan-tracked PRs.
+Populate an **in-memory independent PR list** with entries for each independent worktree: `branch`, `worktree_path`, `pr_url` (if found), `pr_number` (if found), `activity` (derived value), and `in_merge_queue: false`. This list is used during status checks.
 
 This listing appears last in every scenario where it is applicable (A, B, D). In Scenario C it is omitted (completed plans have no active worktrees to track). These worktrees also appear in the full status display — see STATUS.md § Independent Worktrees.
 
@@ -434,40 +428,6 @@ Look up the task's `agent_id` from the plan YAML:
 ```bash
 yq e "($TASKS_PATH[] | select(.id == \"<task-id>\")).agent_id" <plan-file>
 ```
-
-## 7. Activity Polling
-
-All periodic monitoring runs inline in the Orchestrating Agent's conversation, triggered by a single CronCreate job. There is no background Polling Agent — the OA executes the check scripts directly when the cron fires.
-
-### Setup
-
-Perform these steps during Startup Reconciliation (step 7) after resolving all escalations, or for first-run sessions (Scenario A) immediately after the greeting.
-
-1. **Source config.** Read `POLLING_INTERVAL_MINUTES` from `config.sh` (plugin root).
-
-2. **Create the activity poll cron job.** Use CronCreate:
-   - **Schedule:** `*/<POLLING_INTERVAL_MINUTES> * * * *` (e.g. `*/15 * * * *` for the default 15-minute interval)
-   - **Prompt:** the self-contained polling cycle instruction below.
-
-   Store the returned cron job ID.
-
-### Cron Prompt
-
-The cron prompt must be self-contained — the OA may have been idle and needs full instructions:
-
-> Run one activity polling cycle. Execute these steps in order, then stop.
->
-> 1. **Check reviews.** Run `check-review-requests.sh` (in `scripts/` under the plugin root). Handle all `NEW_REVIEW_REQUEST` and `REVIEW_REMOVED` events per CODE_REVIEW.md. If the pending reviews list changed, call `save-session-state.sh`.
->
-> 2. **Check independent PRs.** Run `poll-github.sh` (in `scripts/` under the plugin root) with no arguments. Parse the structured YAML output. For each PR entry, match against the independent PR list. For matched independent PRs, handle `exit_code` per PR_MONITORING.md § Independent PR Monitoring (read-only informational — notifications only, no actions). For PRs not matched to any independent worktree, treat as newly-discovered independent PRs and add to the independent PR list.
->
-> 3. **Timeouts.** If any PR entry's `output` contains a `TIMEOUT` line, escalate to the human with the PR URL and elapsed time.
->
-> If nothing is reportable (all exit codes are 4 with no timeouts), do nothing.
-
-### Timeout Detection
-
-The check scripts (`check-pr-status.sh`, `check-merge-queue.sh`) persist state files between invocations. If a PR's state remains unchanged for `POLLING_TIMEOUT_MINUTES`, the script emits a `TIMEOUT` line in stdout. On receiving a timeout, escalate to the human with the PR URL and elapsed time.
 
 ## Hard Constraints
 

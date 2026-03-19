@@ -6834,3 +6834,10 @@ tasks:
     description: >
       Verification pass: read-through all modified files, check prototype path integrity, grep for dangling references to deleted files, verify independent worktree paths.
 
+  - id: 156
+    name: remove-polling-cycle
+    status: done
+    depends_on: [155]
+    description: >
+      Remove the CronCreate-based activity polling cycle. Delete poll-github.sh, remove polling_interval_minutes from config/settings/example, strip all cron and polling cycle references from OA SKILL.md, PR_MONITORING.md, CODE_REVIEW.md, and config SKILL.md. Preserve individual check scripts for on-demand use.
+

@@ -4,14 +4,13 @@
 
 The Orchestrating Agent monitors independent worktree PRs as read-only informational. All notifications go directly to the human — no actions are taken automatically.
 
-The activity poll runs check scripts on a cron-driven schedule (see SKILL.md § Activity Polling):
+Status checks run on-demand during startup reconciliation and when the user requests a status check. The following scripts are used:
 
-- `poll-github.sh` — **primary cron entry point.** Self-discovers all open PRs authored by the current user via `gh pr list --author @me`, then orchestrates check scripts into a single call with unified YAML output. No arguments or stdin required.
 - `check-review-requests.sh` — checks for incoming review requests.
 - `check-pr-status.sh` — checks PR state, review decision, and CI check summaries.
 - `check-merge-queue.sh` — checks merge queue status.
 
-> **Script locations:** `poll-github.sh`, `check-review-requests.sh`, and `check-merge-queue.sh` are in `scripts/` (plugin root). `check-pr-status.sh` is in `skills/orchestrating-agents/scripts/`. The individual scripts remain available for direct use outside the cron cycle (e.g., startup reconciliation).
+> **Script locations:** `check-review-requests.sh` and `check-merge-queue.sh` are in `scripts/` (plugin root). `check-pr-status.sh` is in `skills/orchestrating-agents/scripts/`.
 
 All check scripts read `POLLING_TIMEOUT_MINUTES` from `config.sh`, persist state between invocations via state files, and emit **state-change events only** — never full API response payloads.
 
@@ -25,7 +24,7 @@ All human-facing notifications about a PR must embed a PR Card (see [NOTIFICATIO
 
 Independent worktrees have no Task Agent — there is no agent to message. All notifications go directly to the human. All exit codes produce **INFORMATIONAL notifications only** — no actions are taken.
 
-On each polling cycle, check each independent worktree with a known PR that is **not** in the merge queue via `check-pr-status.sh <pr-url>`. Handle exit codes:
+When checking independent worktree status (during startup or on user request), check each independent worktree with a known PR that is **not** in the merge queue via `check-pr-status.sh <pr-url>`. Handle exit codes:
 
 ### Approved + CI passing (exit 0)
 
