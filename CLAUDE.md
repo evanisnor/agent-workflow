@@ -36,7 +36,7 @@ All shell scripts must be compatible with bash 3.2 (the macOS system default). D
 
 | Agent | Skill File | Responsibility |
 |---|---|---|
-| **Orchestrating Agent** | `skills/orchestrating-agents/` | Coordinates all work, spawns other agents, reviews diffs, monitors PRs/CI. Never plans or writes code. |
+| **Orchestrating Agent** | `skills/orchestrating-agents/` | Coordinates all work, spawns other agents, reviews diffs. Never plans or writes code. |
 | **Planning Agent** | `skills/planning-tasks/` | Decomposes work into atomic tasks, builds dependency trees, syncs with configured issue tracker. Spawned on-demand, exits after plan approval. |
 | **Task Agents** | `skills/executing-tasks/` | One per task. Each runs on local main, implements a single task, and commits directly. Does not push or manage PRs. |
 
@@ -61,14 +61,11 @@ dispatch/
 ├── scripts/                      # Shared scripts (sourced by all agents)
 │   ├── config.sh                 # Config loader — merges settings.yaml + .dispatch.yaml
 │   ├── load-plan.sh              # Fetch plan YAML from plan storage repo
-│   ├── save-plan.sh              # Persist plan YAML with git-based mutex lock
-│   ├── check-review-requests.sh   # Single-shot review request check
-│   └── check-merge-queue.sh      # Single-shot merge queue status check
+│   └── save-plan.sh              # Persist plan YAML with git-based mutex lock
 └── skills/
     ├── orchestrating-agents/
     │   ├── SKILL.md              # Delegation workflow
     │   ├── REVIEW.md             # Diff review approval loop
-    │   ├── PR_MONITORING.md      # PR/CI/merge queue monitoring
     │   └── scripts/              # Worktree and agent spawning scripts
     ├── planning-tasks/
     │   ├── SKILL.md              # Planning workflow

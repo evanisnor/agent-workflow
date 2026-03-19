@@ -114,7 +114,6 @@ Always include these fields at the envelope level: `id`, `title`, `status`, `con
   config:
     max_ci_fix_attempts: 3    # Optional per-epic override
     max_agent_restarts: 2
-    polling_timeout_minutes: 60
 
   <tasks-key>:           # e.g. tasks:, issues:
     - ...

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# save-session-state.sh <memory-dir> <plan-file> [--independent-prs <yaml>] [--pending-reviews <yaml>] [--deferred-actions <yaml>]
+# save-session-state.sh <memory-dir> <plan-file> [--deferred-actions <yaml>]
 #
 # Writes a dispatch-session-state.yaml snapshot to the Claude Code memory directory.
 # Used by the Orchestrating Agent to cache session state for warm-start on next session.
@@ -15,7 +15,7 @@ _SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # --- Parse arguments ---
 if [[ $# -lt 2 ]]; then
-  echo "Usage: save-session-state.sh <memory-dir> <plan-file> [--independent-prs <yaml>] [--pending-reviews <yaml>] [--deferred-actions <yaml>]" >&2
+  echo "Usage: save-session-state.sh <memory-dir> <plan-file> [--deferred-actions <yaml>]" >&2
   exit 1
 fi
 
@@ -23,20 +23,10 @@ MEMORY_DIR="$1"
 PLAN_FILE="$2"
 shift 2
 
-INDEPENDENT_PRS_YAML=""
-PENDING_REVIEWS_YAML=""
 DEFERRED_ACTIONS_YAML=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --independent-prs)
-      INDEPENDENT_PRS_YAML="$2"
-      shift 2
-      ;;
-    --pending-reviews)
-      PENDING_REVIEWS_YAML="$2"
-      shift 2
-      ;;
     --deferred-actions)
       DEFERRED_ACTIONS_YAML="$2"
       shift 2
@@ -141,20 +131,6 @@ ABSOLUTE_PLAN=$(cd "$(dirname "$PLAN_FILE")" && echo "$(pwd)/$(basename "$PLAN_F
   echo "issue_tracking:"
   echo "  status: \"${IT_STATUS:-null}\""
   echo "  root_id: \"${IT_ROOT_ID:-null}\""
-
-  echo "independent_prs:"
-  if [[ -n "$INDEPENDENT_PRS_YAML" ]]; then
-    echo "$INDEPENDENT_PRS_YAML" | sed 's/^/  /'
-  else
-    echo "  []"
-  fi
-
-  echo "pending_reviews:"
-  if [[ -n "$PENDING_REVIEWS_YAML" ]]; then
-    echo "$PENDING_REVIEWS_YAML" | sed 's/^/  /'
-  else
-    echo "  []"
-  fi
 
   echo "deferred_actions:"
   if [[ -n "$DEFERRED_ACTIONS_YAML" ]]; then

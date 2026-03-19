@@ -107,9 +107,6 @@ MAX_CI_FIX_ATTEMPTS="$(_cfg '.defaults.max_ci_fix_attempts' '.defaults.max_ci_fi
 export MAX_AGENT_RESTARTS
 MAX_AGENT_RESTARTS="$(_cfg '.defaults.max_agent_restarts' '.defaults.max_agent_restarts' '2')"
 
-export POLLING_TIMEOUT_MINUTES
-POLLING_TIMEOUT_MINUTES="$(_cfg '.defaults.polling_timeout_minutes' '.defaults.polling_timeout_minutes' '60')"
-
 export MAIN_UPDATE_STRATEGY
 MAIN_UPDATE_STRATEGY="$(_cfg '.git.main_update_strategy' '.defaults.main_update_strategy' 'rebase')"
 
@@ -185,7 +182,4 @@ apply_epic_config() {
   epic_max_restarts="$(yq e '.epic.config.max_agent_restarts // ""' "${plan_path}" 2>/dev/null || true)"
   [[ -n "${epic_max_restarts}" ]] && export MAX_AGENT_RESTARTS="${epic_max_restarts}"
 
-  local epic_timeout
-  epic_timeout="$(yq e '.epic.config.polling_timeout_minutes // ""' "${plan_path}" 2>/dev/null || true)"
-  [[ -n "${epic_timeout}" ]] && export POLLING_TIMEOUT_MINUTES="${epic_timeout}"
 }

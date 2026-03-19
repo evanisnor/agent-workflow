@@ -83,27 +83,15 @@ Rendering rules:
 | Verification gate | ACTION REQUIRED | REVIEW.md |
 | Task committed — diff review | ACTION REQUIRED | REVIEW.md |
 | Diff open for incoming review | ACTION REQUIRED | CODE_REVIEW.md |
-| Review requested (incoming) | INFORMATIONAL | CODE_REVIEW.md |
-| Review request removed | INFORMATIONAL | CODE_REVIEW.md |
 | Preliminary review ready | INFORMATIONAL | CODE_REVIEW.md |
 | Startup greetings (Scenarios A-D) | INFORMATIONAL | SKILL.md |
 | Task completed | SUCCESS | SKILL.md |
-| Timeout escalation | WARNING | PR_MONITORING.md |
 | Plan corruption | WARNING | SKILL.md |
 | Failed tasks warning | WARNING | SKILL.md |
 | Startup Scenario C with failures | WARNING | SKILL.md |
 | PR approved | SUCCESS | CODE_REVIEW.md |
 | All tasks complete | SUCCESS | SKILL.md |
 | Ready for new assignment | SUCCESS | SKILL.md |
-| Independent PR approved + CI passing | INFORMATIONAL | PR_MONITORING.md |
-| Independent PR changes requested | INFORMATIONAL | PR_MONITORING.md |
-| Independent PR reviewer commented | INFORMATIONAL | PR_MONITORING.md |
-| Independent PR CI failed | INFORMATIONAL | PR_MONITORING.md |
-| Independent PR merged | SUCCESS | PR_MONITORING.md |
-| Independent PR closed | INFORMATIONAL | PR_MONITORING.md |
-| Independent PR merge queue conflict | WARNING | PR_MONITORING.md |
-| Independent PR merge queue CI failure | WARNING | PR_MONITORING.md |
-| Independent PR merge queue ejection | WARNING | PR_MONITORING.md |
 
 ## Card Embedding
 

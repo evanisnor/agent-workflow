@@ -5,12 +5,9 @@ A Claude Code plugin that coordinates a team of AI agents through your developme
 ## Features
 
 - Decomposes work into atomic tasks with a dependency tree — you approve the plan before any code is written
-- Implements each task in an isolated git worktree, one agent per task, running in parallel
-- Opens a diff review window before every PR — no PR opens without your sign-off
-- Watches CI, fixes failures autonomously, and adds PRs to the merge queue
-- Handles reviewer feedback — presents requested changes to you, implements what you approve, replies to reviewers
-- Analyzes incoming GitHub review requests automatically before you sit down to review
-- Stacks dependent tasks during review so parallel work begins immediately
+- Implements each task sequentially on local main, one commit per task — you push and manage PRs yourself
+- Opens a diff review window before every commit — no code lands without your sign-off
+- Analyzes incoming GitHub review requests on demand when you ask
 - Prototype mode — explore before committing to the full plan, no PRs opened
 - Knowledge store — learns from past sessions, reapplies lessons in future runs
 
@@ -73,10 +70,10 @@ This walks you through the required fields (plan storage path) and optional sett
 
 | Agent | Role |
 |---|---|
-| **Orchestrating Agent** | Coordinates everything — spawns agents, surfaces decisions, monitors PRs and CI. Never writes code. |
+| **Orchestrating Agent** | Coordinates everything — spawns agents, surfaces decisions. Never writes code. |
 | **Planning Agent** | Decomposes work into atomic tasks with a dependency tree. Exits after you approve the plan. |
-| **Task Agents** | One per task. Implements in an isolated worktree, shepherds the PR from draft through merge. |
-| **Review Agents** | Analyzes incoming review requests — reads the diff, summarizes changes, surfaces questions — so the work is done before you sit down. |
+| **Task Agents** | One per task. Implements on local main, commits directly. Does not push or manage PRs. |
+| **Review Agents** | On request, analyzes incoming review requests — reads the diff, summarizes changes, surfaces questions — so the work is done before you sit down. |
 
 ### Human approval gates
 
@@ -84,11 +81,7 @@ This walks you through the required fields (plan storage path) and optional sett
 - **Approving the plan** — before anything is saved
 - **Spawning Task Agents** — before any code is written
 - **Spawning a Prototype Agent** — before any exploratory implementation begins
-- **Stacking a dependent Task Agent** — offered after each approved diff; one at a time, opt-in
-- **Diff review** — before every PR is opened
-- **Reviewer-requested changes** — before the Task Agent acts on them
-- **CI failures beyond the retry limit** — escalated with a summary of what failed
-- **Merge conflicts** — surfaced for guidance before any conflicting changes are pushed
+- **Diff review** — before every commit is accepted
 - **Abandoning a task** — requires explicit confirmation
 
 ## Configuration
@@ -116,7 +109,6 @@ This walks you through the required fields (plan storage path) and optional sett
 | `sandbox.filesystem.extra_deny_read` | `array of glob strings` | `[]` | Additional paths to block Task Agents from reading, merged with the hardcoded base deny list. |
 | `defaults.max_ci_fix_attempts` | `integer` | `3` | How many times a Task Agent may attempt to fix a CI failure before escalating. |
 | `defaults.max_agent_restarts` | `integer` | `2` | How many times the Orchestrating Agent may restart a dead Task Agent before escalating. |
-| `defaults.polling_timeout_minutes` | `integer` | `60` | How long (in minutes) watch scripts poll before timing out and escalating. |
 
 ### Issue Tracking Integration
 
@@ -245,7 +237,7 @@ Running `/config setup` handles both files automatically — it creates the proj
 - **Network access** is limited to domains listed in `sandbox.network.allowed_domains`.
 - **Read access** is denied for `~/.ssh/**`, `~/.gnupg/**`, `**/.env`, `**/*.pem`, `**/*.key`, plus any paths in `sandbox.filesystem.extra_deny_read`.
 - Protected branches (`git.protected_branches`) are enforced at the permissions layer, independent of agent reasoning.
-- `gh pr merge` without `--auto` is always denied — only the Orchestrating Agent can add PRs to the merge queue, after human approval. Task Agents never call merge or mark-ready commands.
+
 
 ### Prompt injection defense
 

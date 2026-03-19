@@ -199,17 +199,6 @@ How many times the Orchestrating Agent may restart a dead Task Agent before esca
 
 ---
 
-### `defaults.polling_timeout_minutes`
-
-| | |
-|---|---|
-| Type | `integer` |
-| Default | `60` |
-
-How long (in minutes) watch scripts and liveness checks poll before timing out and escalating.
-
----
-
 ## Setup Mode
 
 Walk the user through creating or updating `.dispatch.yaml`, then ensure `.claude/settings.json` is configured:

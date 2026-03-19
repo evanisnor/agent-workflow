@@ -11,7 +11,6 @@ defaults:
   main_update_strategy: rebase
   max_ci_fix_attempts: 3
   max_agent_restarts: 2
-  polling_timeout_minutes: 60
   diff_mode: split
   pr_template_path: ""
   pr_description_prompt: ""

@@ -52,4 +52,3 @@ prototype:
 defaults:
   max_ci_fix_attempts: 3
   max_agent_restarts: 2
-  polling_timeout_minutes: 60
