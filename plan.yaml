@@ -5429,3 +5429,10 @@ tasks:
     depends_on: [135]
     description: >
       Make poll-github.sh self-discover authored PRs via gh pr list --author @me instead of receiving PR list on stdin. Determine in_merge_queue from state file existence. Add url to output. Update SKILL.md cron prompt and PR_MONITORING.md overview.
+
+  - id: 137
+    name: migrate-status-display-cards-to-tables
+    status: done
+    depends_on: []
+    description: >
+      Migrate the status display from card-based layout (single-column markdown tables per entity) to multi-column tables for scanning status at a glance. Rewrite STATUS.md and status/SKILL.md to use Worktrees Table, Queued Table, and Pending Reviews Table with footnoted URLs. Update SKILL.md references.

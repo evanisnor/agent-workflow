@@ -543,25 +543,25 @@ Derive counts from reconciliation results and the loaded plan:
 
 Run `git worktree list --porcelain` and collect all worktree paths. Subtract the main worktree (first entry) and all paths referenced by any plan task's `worktree` field. The remaining worktrees are **independent** — they exist outside any Dispatch plan.
 
-If any independent worktrees exist, output a compact listing using Worktree Cards:
+If any independent worktrees exist, output a compact listing using a table:
 
 > **Independent worktrees:** N worktree(s) outside the current plan.
 
-Then render one card per independent worktree:
+Then render a table of independent worktrees:
 
-> | `{branch}` |
-> |---|
-> | **Activity:** {activity} |
-> | **PR:** #{number} |
-> | {pr_url} |
+> | Branch | Activity | PR |
+> |--------|----------|----|
+> | `{branch}` | {activity} | #{number} [1] |
+>
+> [1]: {pr_url}
 
-For each independent worktree, discover the branch name from `git worktree list --porcelain` (strip `refs/heads/` from the `branch` ref) and check for an associated PR via `gh pr list --head <branch> --json number,url --jq '.[0]'`. Omit PR and URL rows if no PR is found.
+For each independent worktree, discover the branch name from `git worktree list --porcelain` (strip `refs/heads/` from the `branch` ref) and check for an associated PR via `gh pr list --head <branch> --json number,url --jq '.[0]'`. Leave PR cell blank if no PR is found.
 
 For each independent worktree with a PR, derive `{activity}` by running `check-pr-status.sh <pr-url>` and mapping the exit code per [PR_MONITORING.md](PR_MONITORING.md) § Independent PR Activity Derivation. For worktrees without a PR, use `no PR`.
 
 Populate an **in-memory independent PR list** with entries for each independent worktree: `branch`, `worktree_path`, `pr_url` (if found), `pr_number` (if found), `activity` (derived value), and `in_merge_queue: false`. This list is used by the activity poll cron to monitor independent PRs alongside plan-tracked PRs.
 
-This listing appears last in every scenario where it is applicable (A, B, D). In Scenario C it is omitted (completed plans have no active worktrees to track). These worktrees also appear in the full status display — see STATUS.md § Independent Worktree Cards.
+This listing appears last in every scenario where it is applicable (A, B, D). In Scenario C it is omitted (completed plans have no active worktrees to track). These worktrees also appear in the full status display — see STATUS.md § Independent Worktrees.
 
 ### Determinism Rule
 
@@ -569,7 +569,7 @@ Same reconciliation state produces same output. Do not add commentary, paraphras
 
 ## Status Display
 
-When the human asks for a status update — in any phrasing — render the worktree-centric status display. The Worktree Cards, Queued Task Cards, Pending Review Cards, and all rendering rules are defined in STATUS.md (loaded alongside this skill). Do not summarise in prose. Always use cards.
+When the human asks for a status update — in any phrasing — render the worktree-centric status display. The Worktrees Table, Queued Table, Pending Reviews Table, and all rendering rules are defined in STATUS.md (loaded alongside this skill). Do not summarise in prose. Always use tables.
 
 ## Plan Update Rule
 
